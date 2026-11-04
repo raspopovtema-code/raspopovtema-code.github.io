@@ -1,0 +1,704 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Рэп-карта Москвы</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Rubik+Mono+One&display=swap">
+<style>
+/* Layout: карта на весь экран; на широком экране справа панель, на телефоне — выдвижная панель снизу */
+:root{
+  --paper:#EEF0F3; --surface:#FFFFFF; --ink:#16181D; --muted:#5B6270; --line:#D6DAE1;
+  --hot:#E3262E; --hot-ink:#FFFFFF; --old:#2B47A6; --old-soft:rgba(43,71,166,.12);
+  --osm-filter:grayscale(1) contrast(.9) brightness(1.05);
+  --shadow:0 6px 24px rgba(20,24,32,.14);
+  --display:"Rubik Mono One","Arial Black",Impact,system-ui,sans-serif;
+  --ui:"Golos Text",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:#101216; --surface:#1A1D24; --ink:#ECEEF2; --muted:#A1A8B4; --line:#2E333D;
+    --hot:#FF4D54; --hot-ink:#15171C; --old:#93ABFF; --old-soft:rgba(147,171,255,.16);
+    --osm-filter:grayscale(1) invert(1) contrast(.85) brightness(.85);
+    --shadow:0 6px 24px rgba(0,0,0,.45);
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--paper);color:var(--ink);font:15px/1.4 var(--ui);overflow:hidden;-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--old);outline-offset:2px}
+[hidden]{display:none!important}
+
+.app{height:100%;display:grid;grid-template-columns:1fr}
+@media (min-width:900px){ .app{grid-template-columns:1fr 380px} }
+
+/* ---------- map ---------- */
+.map{position:relative;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;background:var(--paper);min-width:0}
+.map.placing{cursor:crosshair}
+.map.placing .pin{pointer-events:none}
+.tiles,.layer{position:absolute;inset:0}
+.tile{position:absolute;left:0;top:0;width:256px;height:256px;transform-origin:0 0;opacity:0;transition:opacity .25s;pointer-events:none}
+.tile.osm{filter:var(--osm-filter)}
+.tile.on{opacity:1}
+.pin{position:absolute;left:0;top:0;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;border:2px solid var(--surface);background:var(--hot);padding:0;box-shadow:0 1px 4px rgba(0,0,0,.35)}
+.pin.sel{width:24px;height:24px;margin:-12px 0 0 -12px;box-shadow:0 0 0 4px rgba(227,38,46,.3)}
+.pin.draft{background:var(--surface);border:3px solid var(--hot);width:22px;height:22px;margin:-11px 0 0 -11px;pointer-events:none}
+.zoom{position:absolute;right:max(12px,env(safe-area-inset-right,0px));top:calc(64px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;gap:6px;z-index:5}
+@media (min-width:900px){ .zoom{top:16px} }
+.zoom button{width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font-size:22px;line-height:1;box-shadow:var(--shadow)}
+.attr{position:absolute;right:6px;bottom:4px;font-size:11px;color:var(--muted);background:color-mix(in srgb,var(--surface) 80%,transparent);padding:1px 6px;border-radius:4px;z-index:4}
+.attr a{color:inherit}
+@media (max-width:899px){ .attr{bottom:calc(76px + env(safe-area-inset-bottom,0px))} }
+.notice{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(420px,84%);text-align:left;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;font-size:14px;line-height:1.45;box-shadow:var(--shadow);pointer-events:none;z-index:3}
+.notice b{display:block;margin-bottom:4px}
+.hint{position:absolute;left:50%;top:calc(70px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:999px;font-weight:600;font-size:14px;z-index:6;box-shadow:var(--shadow);white-space:nowrap;pointer-events:none}
+@media (min-width:900px){ .hint{top:16px} }
+
+/* phone title */
+.ptitle{position:absolute;left:max(12px,env(safe-area-inset-left,0px));top:calc(12px + env(safe-area-inset-top,0px));z-index:5;display:flex;align-items:center;gap:8px;background:var(--surface);border-radius:12px;padding:8px 12px;box-shadow:var(--shadow)}
+.ptitle b{font:13px/1 var(--display);letter-spacing:.02em}
+.ptitle .n{font:600 13px/1 var(--ui);color:var(--hot)}
+@media (min-width:900px){ .ptitle{display:none} }
+
+/* ---------- panel ---------- */
+.panel{background:var(--surface);display:flex;flex-direction:column;min-width:0;min-height:0;z-index:7}
+@media (min-width:900px){ .panel{border-left:1px solid var(--line);height:100%} }
+@media (max-width:899px){
+  .panel{position:fixed;left:0;right:0;bottom:0;max-height:70%;border-radius:16px 16px 0 0;box-shadow:0 -6px 24px rgba(0,0,0,.18);padding-bottom:env(safe-area-inset-bottom,0px)}
+  .panel:not(.open) .body{display:none}
+}
+.bar{display:flex;gap:8px;align-items:center;padding:12px max(16px,env(safe-area-inset-right,0px)) 12px max(16px,env(safe-area-inset-left,0px));border-bottom:1px solid var(--line)}
+@media (min-width:900px){ .bar{order:2;border-bottom:0;border-top:1px solid var(--line);padding:14px 20px} .toggle{display:none!important} }
+.btn{border:0;border-radius:12px;padding:12px 16px;font-weight:600;background:var(--paper);color:var(--ink)}
+.btn.primary{background:var(--hot);color:var(--hot-ink);flex:1}
+.btn.ghost{background:transparent;border:1px solid var(--line)}
+.btn:disabled{opacity:.55;cursor:default}
+.body{overflow-y:auto;min-height:0;flex:1;padding:18px max(16px,env(safe-area-inset-right,0px)) 18px max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:22px}
+@media (min-width:900px){ .body{order:1;padding:22px 20px} }
+
+.head h1{font:22px/1.15 var(--display);margin:0 0 6px;letter-spacing:.01em;text-wrap:balance}
+.head p{margin:0;color:var(--muted);font-size:14px}
+.status{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center}
+.status::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.status.ok::before{background:#2E9E5B}
+.status.err::before{background:var(--hot)}
+.demo{font-size:13px;line-height:1.45;background:var(--paper);border-radius:10px;padding:10px 12px;color:var(--muted)}
+.demo b{color:var(--ink)}
+
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--paper);border-radius:12px;padding:12px}
+.stat .v{font:30px/1 var(--display);font-variant-numeric:tabular-nums}
+.stat .k{font-size:12px;color:var(--muted);margin-top:6px;text-transform:uppercase;letter-spacing:.05em}
+
+.join{display:flex;gap:14px;align-items:center}
+.join img{width:112px;height:112px;border-radius:8px;background:#fff;padding:6px;flex:none}
+.join .url{font:600 16px/1.3 var(--ui);word-break:break-all}
+.join .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+@media (max-width:899px){ .join{display:none} }
+
+.sec h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 10px;font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 12px;font-size:13px;font-weight:500}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.chip .c{opacity:.6;margin-left:4px;font-variant-numeric:tabular-nums}
+.switch{display:flex;align-items:center;gap:10px;font-size:14px;cursor:pointer}
+.switch input{width:18px;height:18px;accent-color:var(--old)}
+.switch small{display:block;color:var(--muted);font-size:12px}
+
+.top{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.top li{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;font-size:14px}
+.top .barw{grid-column:1/-1;height:4px;border-radius:2px;background:var(--paper);overflow:hidden}
+.top .barw i{display:block;height:100%;background:var(--hot)}
+.top .num{font-variant-numeric:tabular-nums;color:var(--muted)}
+.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.list button{width:100%;text-align:left;background:none;border:0;border-top:1px solid var(--line);padding:10px 0;display:grid;gap:2px}
+.list .pl{font-weight:600}
+.list .tr{color:var(--muted);font-size:13px}
+.empty{color:var(--muted);font-size:14px;line-height:1.5}
+
+.card{background:var(--paper);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px}
+.card .eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.card .pl{font:20px/1.2 var(--display)}
+.card .tr{font-size:15px}
+.card .meta{font-size:13px;color:var(--muted)}
+.card a{color:var(--old);font-weight:600}
+.card .x{align-self:flex-start;margin-top:4px}
+
+form{display:flex;flex-direction:column;gap:12px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:13px;font-weight:600}
+.field label span{color:var(--muted);font-weight:400}
+.field input{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:11px 12px;font-size:16px;min-width:0}
+.field input:focus,.field textarea:focus{border-color:var(--old);outline:none;box-shadow:0 0 0 3px var(--old-soft)}
+.field textarea{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:11px 12px;font-size:16px;min-width:0;resize:vertical;min-height:70px;font-family:inherit;color:inherit}
+.card .quote{font-size:16px;line-height:1.45;font-style:italic;border-left:3px solid var(--hot);padding-left:10px;white-space:pre-line}
+.list .ln{font-size:13px;font-style:italic;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pointline{font-size:14px;border-radius:10px;padding:10px 12px;background:var(--paper)}
+.pointline.set{color:var(--ink)}
+.pointline.unset{color:var(--hot);font-weight:600}
+.err{color:var(--hot);font-size:14px;min-height:1em}
+.row{display:flex;gap:8px}
+
+.toast{position:fixed;left:50%;top:calc(16px + env(safe-area-inset-top,0px));transform:translate(-50%,-30px);opacity:0;visibility:hidden;background:var(--ink);color:var(--paper);padding:10px 18px;border-radius:999px;font-weight:600;z-index:20;transition:transform .25s,opacity .25s,visibility .25s}
+.toast.show{transform:translate(-50%,0);opacity:1;visibility:visible}
+@media (prefers-reduced-motion: reduce){ .tile,.toast{transition:none} }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="map" id="map" aria-label="Карта Москвы">
+    <div class="tiles" id="tiles"></div>
+    <div class="layer" id="layer"></div>
+    <div class="ptitle"><b>РЭП-КАРТА</b><span class="n" id="pcount">0</span></div>
+    <div class="zoom">
+      <button type="button" id="zin" aria-label="Приблизить">+</button>
+      <button type="button" id="zout" aria-label="Отдалить">−</button>
+    </div>
+    <div class="hint" id="hint" hidden>Нажмите на карте место из трека</div>
+    <div class="notice" id="notice" hidden></div>
+    <div class="attr">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">участники OpenStreetMap</a></div>
+  </div>
+
+  <aside class="panel" id="panel">
+    <div class="bar">
+      <button type="button" class="btn primary" id="addBtn">+ Добавить трек</button>
+      <button type="button" class="btn ghost toggle" id="toggleBtn" aria-expanded="false">Список</button>
+    </div>
+    <div class="body" id="body">
+
+      <!-- overview -->
+      <section id="vOverview" class="view">
+        <div style="display:flex;flex-direction:column;gap:22px">
+          <div class="head">
+            <h1>Рэп-карта Москвы</h1>
+            <p>Места из текстов московского рэпа. Карту наполняет группа курса «Город как медиа».</p>
+          </div>
+          <div class="demo" id="demo" hidden><b>Демо-режим.</b> Точки сохраняются только в этом браузере. Чтобы карта стала общей для всей группы, подключите Google-таблицу по инструкции.</div>
+          <div class="status" id="status" hidden></div>
+          <div class="join" id="join" hidden>
+            <img id="qr" alt="QR-код ссылки на карту">
+            <div><div class="k">Добавить свой трек</div><div class="url" id="url"></div></div>
+          </div>
+          <div class="stats">
+            <div class="stat"><div class="v" id="sTracks">0</div><div class="k" id="sTracksK">треков</div></div>
+            <div class="stat"><div class="v" id="sPlaces">0</div><div class="k" id="sPlacesK">мест</div></div>
+          </div>
+          <div class="sec">
+            <h2>Годы выхода трека</h2>
+            <div class="chips" id="chips">
+              <button type="button" class="chip" data-f="all" aria-pressed="true">Все<span class="c" id="cAll"></span></button>
+              <button type="button" class="chip" data-f="old" aria-pressed="false">До 2015<span class="c" id="cOld"></span></button>
+              <button type="button" class="chip" data-f="new" aria-pressed="false">2016 и позже<span class="c" id="cNew"></span></button>
+            </div>
+          </div>
+          <div class="sec">
+            <h2>Чаще всего</h2>
+            <ol class="top" id="top"></ol>
+          </div>
+          <div class="sec">
+            <h2>Последние</h2>
+            <ul class="list" id="recent"></ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- detail -->
+      <section id="vDetail" class="view" hidden>
+        <div class="card" id="card"></div>
+      </section>
+
+      <!-- form -->
+      <section id="vForm" class="view" hidden>
+        <form id="form" novalidate>
+          <div class="head"><h1>Новый трек</h1></div>
+          <div class="pointline unset" id="pointline">Нажмите на карте место, о котором поётся в треке</div>
+          <div class="field"><label for="fPlace">Место в треке</label><input id="fPlace" maxlength="80" placeholder="Жулебино, Патрики, Садовое…" autocomplete="off"></div>
+          <div class="field"><label for="fArtist">Исполнитель</label><input id="fArtist" maxlength="80" autocomplete="off"></div>
+          <div class="field"><label for="fTrack">Трек</label><input id="fTrack" maxlength="120" autocomplete="off"></div>
+          <div class="field"><label for="fLine">Строчка из трека <span>— где упоминается это место</span></label><textarea id="fLine" maxlength="200" rows="2" placeholder="Одна-две строчки" autocomplete="off"></textarea></div>
+          <div class="field"><label for="fYear">Год выхода <span>— если знаете</span></label><input id="fYear" inputmode="numeric" maxlength="4" placeholder="2019" autocomplete="off"></div>
+          <div class="field"><label for="fLink">Ссылка на трек <span>— необязательно</span></label><input id="fLink" type="url" maxlength="300" placeholder="https://music.yandex.ru/…" autocomplete="off"></div>
+          <div class="err" id="err" role="alert"></div>
+          <div class="row">
+            <button type="submit" class="btn primary" id="saveBtn">Добавить на карту</button>
+            <button type="button" class="btn ghost" id="cancelBtn">Отмена</button>
+          </div>
+        </form>
+      </section>
+    </div>
+  </aside>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* ============ НАСТРОЙКА ============
+   Вставьте между кавычками ссылку на веб-приложение Google Apps Script
+   (она заканчивается на /exec). Пока строка пустая, карта работает в демо-режиме. */
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxcQF-85c3nPKAvTOD2H2sUVbuDu4xaOxD6qpb9u7Y1UloZVUs_t9J0tNrUnh9kMi0s/exec';
+/* =================================== */
+
+const POLL_MS = 6000;
+const START = { south: 55.57, north: 55.92, west: 37.36, east: 37.86 };
+const LIMITS = { south: 55.05, north: 56.2, west: 36.7, east: 38.2 };
+
+/* ---------- проекция ---------- */
+const TILE = 256;
+function project(lat, lng, z) {
+  const s = TILE * Math.pow(2, z);
+  const r = lat * Math.PI / 180;
+  return { x: (lng + 180) / 360 * s, y: (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * s };
+}
+function unproject(x, y, z) {
+  const s = TILE * Math.pow(2, z);
+  const n = Math.PI - 2 * Math.PI * y / s;
+  return { lat: 180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n))), lng: x / s * 360 - 180 };
+}
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+/* ---------- карта ---------- */
+function createMap(el, tilesEl, layerEl, onTap) {
+  const MINZ = 9, MAXZ = 17;
+  let w = 1, h = 1, zoom = 10, center = { lat: 55.75, lng: 37.62 };
+  const tiles = new Map();
+  const items = []; // {lat,lng,el,dx,dy}
+  let raf = 0, loaded = 0, failed = 0;
+  // Подложка — OpenStreetMap. Она показывается только страницам, открытым по адресу в интернете
+  // (например, с htmlkin.ru), а файлу, открытому с компьютера, сервер карт отказывает.
+  const providers = [
+    { url: (z, x, y) => `https://tile.openstreetmap.org/${z}/${x}/${y}.png`, cls: 'osm' },
+  ];
+  const noTiles = location.protocol === 'file:';
+
+  function measure() { const r = el.getBoundingClientRect(); w = Math.max(1, r.width); h = Math.max(1, r.height); }
+  function schedule() { if (!raf) raf = requestAnimationFrame(() => { raf = 0; render(); }); }
+  function clampCenter() {
+    center.lat = clamp(center.lat, LIMITS.south, LIMITS.north);
+    center.lng = clamp(center.lng, LIMITS.west, LIMITS.east);
+  }
+  function latLngAt(px, py) {
+    const c = project(center.lat, center.lng, zoom);
+    return unproject(c.x + px - w / 2, c.y + py - h / 2, zoom);
+  }
+  function screenOf(lat, lng) {
+    const c = project(center.lat, center.lng, zoom), p = project(lat, lng, zoom);
+    return { x: p.x - c.x + w / 2, y: p.y - c.y + h / 2 };
+  }
+  function tileFailed() {
+    failed++;
+    if (loaded === 0 && failed >= 8) api.onTilesDown && api.onTilesDown();
+  }
+  function render() {
+    const z = clamp(Math.round(zoom), 0, MAXZ);
+    const scale = Math.pow(2, zoom - z);
+    const c = project(center.lat, center.lng, z);
+    const left = c.x - w / 2 / scale, top = c.y - h / 2 / scale;
+    const x0 = Math.floor(left / TILE), x1 = Math.floor((left + w / scale) / TILE);
+    const y0 = Math.floor(top / TILE), y1 = Math.floor((top + h / scale) / TILE);
+    const n = Math.pow(2, z), need = new Set();
+    for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) {
+      if (y < 0 || y >= n) continue;
+      const xx = ((x % n) + n) % n, key = z + '/' + x + '/' + y;
+      need.add(key);
+      if (noTiles) continue;
+      let img = tiles.get(key);
+      if (!img) {
+        img = new Image();
+        img.className = 'tile ' + providers[0].cls; img.alt = ''; img.decoding = 'async';
+        let p = 0;
+        img.onload = () => { img.classList.add('on'); loaded++; api.onTilesUp && api.onTilesUp(); };
+        img.onerror = () => { if (p < providers.length - 1) { p++; img.classList.add(providers[p].cls || 'x'); img.src = providers[p].url(z, xx, y); } else tileFailed(); };
+        img.src = providers[0].url(z, xx, y);
+        tilesEl.appendChild(img); tiles.set(key, img);
+      }
+      const sx = (x * TILE - c.x) * scale + w / 2, sy = (y * TILE - c.y) * scale + h / 2;
+      img.style.transform = `translate(${sx}px,${sy}px) scale(${scale * 1.002})`;
+    }
+    for (const [k, img] of tiles) if (!need.has(k)) { img.remove(); tiles.delete(k); }
+    for (const it of items) {
+      const s = screenOf(it.lat, it.lng);
+      const off = s.x < -60 || s.y < -60 || s.x > w + 60 || s.y > h + 60;
+      it.el.style.visibility = off ? 'hidden' : '';
+      it.el.style.transform = `translate(${s.x}px,${s.y}px)`;
+    }
+  }
+  function setView(lat, lng, z) { center = { lat, lng }; zoom = clamp(z, MINZ, MAXZ); clampCenter(); schedule(); }
+  function zoomAround(nz, px, py) {
+    nz = clamp(nz, MINZ, MAXZ);
+    const ll = latLngAt(px, py);
+    zoom = nz;
+    const p = project(ll.lat, ll.lng, zoom);
+    center = unproject(p.x - (px - w / 2), p.y - (py - h / 2), zoom);
+    clampCenter(); schedule();
+  }
+  function panBy(dx, dy) {
+    const c = project(center.lat, center.lng, zoom);
+    center = unproject(c.x - dx, c.y - dy, zoom);
+    clampCenter(); schedule();
+  }
+  function fit(b, pad) {
+    const a = project(b.north, b.west, 0), d = project(b.south, b.east, 0);
+    const zx = Math.log2(Math.max(1, w - pad.l - pad.r) / (d.x - a.x)), zy = Math.log2(Math.max(1, h - pad.t - pad.b) / (d.y - a.y));
+    const z = clamp(Math.min(zx, zy), MINZ, MAXZ);
+    const k = Math.pow(2, z);
+    // центр рамки смещается так, чтобы рамка встала в свободную часть экрана
+    const cx = (a.x + d.x) / 2 * k + (pad.r - pad.l) / 2, cy = (a.y + d.y) / 2 * k + (pad.b - pad.t) / 2;
+    const mid = unproject(cx, cy, z);
+    setView(mid.lat, mid.lng, z);
+  }
+  let anim = 0;
+  function flyTo(lat, lng, z) {
+    cancelAnimationFrame(anim);
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const from = { lat: center.lat, lng: center.lng, z: zoom }, to = { lat, lng, z: clamp(z, MINZ, MAXZ) };
+    if (reduce) return setView(to.lat, to.lng, to.z);
+    const t0 = performance.now(), dur = 450;
+    const step = (t) => {
+      const k = Math.min(1, (t - t0) / dur), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+      center = { lat: from.lat + (to.lat - from.lat) * e, lng: from.lng + (to.lng - from.lng) * e };
+      zoom = from.z + (to.z - from.z) * e; render();
+      if (k < 1) anim = requestAnimationFrame(step);
+    };
+    anim = requestAnimationFrame(step);
+  }
+
+  // ввод: перетаскивание, щипок, колесо, касание
+  const ptrs = new Map();
+  let downAt = 0, downPos = null, moved = false, pinch = null;
+  el.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('button,a')) return;
+    el.setPointerCapture(e.pointerId);
+    ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (ptrs.size === 1) { downAt = performance.now(); downPos = { x: e.clientX, y: e.clientY }; moved = false; }
+    if (ptrs.size === 2) {
+      const [a, b] = [...ptrs.values()];
+      pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), z: zoom, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
+      moved = true;
+    }
+  });
+  el.addEventListener('pointermove', (e) => {
+    const prev = ptrs.get(e.pointerId); if (!prev) return;
+    const cur = { x: e.clientX, y: e.clientY }; ptrs.set(e.pointerId, cur);
+    const r = el.getBoundingClientRect();
+    if (ptrs.size === 1) {
+      if (downPos && Math.hypot(cur.x - downPos.x, cur.y - downPos.y) > 6) moved = true;
+      if (moved) panBy(cur.x - prev.x, cur.y - prev.y);
+    } else if (ptrs.size === 2 && pinch) {
+      const [a, b] = [...ptrs.values()];
+      const d = Math.hypot(a.x - b.x, a.y - b.y), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+      panBy(mx - pinch.mx, my - pinch.my);
+      pinch.mx = mx; pinch.my = my;
+      if (pinch.d > 0) zoomAround(pinch.z + Math.log2(d / pinch.d), mx - r.left, my - r.top);
+    }
+  });
+  const up = (e) => {
+    if (!ptrs.has(e.pointerId)) return;
+    ptrs.delete(e.pointerId);
+    if (ptrs.size < 2) pinch = null;
+    if (ptrs.size === 0 && !moved && performance.now() - downAt < 600 && e.type === 'pointerup') {
+      const r = el.getBoundingClientRect();
+      onTap(latLngAt(e.clientX - r.left, e.clientY - r.top));
+    }
+  };
+  el.addEventListener('pointerup', up);
+  el.addEventListener('pointercancel', up);
+  el.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const r = el.getBoundingClientRect();
+    const dz = clamp(-e.deltaY * (e.deltaMode === 1 ? 0.05 : 0.0025), -0.6, 0.6);
+    zoomAround(zoom + dz, e.clientX - r.left, e.clientY - r.top);
+  }, { passive: false });
+  el.addEventListener('dblclick', (e) => {
+    if (e.target.closest('button,a')) return;
+    const r = el.getBoundingClientRect();
+    zoomAround(Math.round(zoom) + 1, e.clientX - r.left, e.clientY - r.top);
+  });
+  new ResizeObserver(() => { measure(); render(); }).observe(el);
+  measure();
+
+  const api = {
+    add(lat, lng, node) { const it = { lat, lng, el: node }; items.push(it); layerEl.appendChild(node); schedule(); return it; },
+    remove(it) { const i = items.indexOf(it); if (i >= 0) items.splice(i, 1); it.el.remove(); },
+    move(it, lat, lng) { it.lat = lat; it.lng = lng; schedule(); },
+    zoomIn() { zoomAround(Math.round(zoom) + 1, w / 2, h / 2); },
+    zoomOut() { zoomAround(Math.round(zoom) - 1, w / 2, h / 2); },
+    fit, flyTo, setView, project, unproject, latLngAt,
+    get zoom() { return zoom; },
+    onTilesDown: null, onTilesUp: null,
+  };
+  return api;
+}
+
+/* ---------- данные ---------- */
+const DEMO_KEY = 'rapmap-demo-v1';
+const demo = !SCRIPT_URL.trim();
+let memoryRows = [];
+function demoLoad() { try { const s = localStorage.getItem(DEMO_KEY); return s ? JSON.parse(s) : memoryRows; } catch (e) { return memoryRows; } }
+function demoSave(rows) { memoryRows = rows; try { localStorage.setItem(DEMO_KEY, JSON.stringify(rows)); } catch (e) {} }
+
+async function apiLoad() {
+  if (demo) return { ok: true, rows: demoLoad() };
+  const u = SCRIPT_URL + (SCRIPT_URL.includes('?') ? '&' : '?') + 't=' + Date.now();
+  const res = await fetch(u, { cache: 'no-store' });
+  return res.json();
+}
+async function apiAdd(row) {
+  if (demo) {
+    const rows = demoLoad().slice();
+    rows.push({ ...row, id: 'd' + Date.now(), t: new Date().toISOString() });
+    demoSave(rows);
+    return { ok: true };
+  }
+  const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(row) });
+  return res.json();
+}
+
+/* ---------- приложение ---------- */
+const $ = (id) => document.getElementById(id);
+const state = { rows: [], filter: 'all', sel: null, placing: false, draft: null, view: 'overview' };
+const pins = new Map();
+let draftItem = null;
+
+const map = createMap($('map'), $('tiles'), $('layer'), onMapTap);
+map.onTilesDown = () => { const n = $('notice'); n.replaceChildren(el('b', null, 'Карта не загружается'), document.createTextNode('Точки работают, но улиц не видно. Проверьте интернет или откройте страницу без VPN.')); n.hidden = false; };
+map.onTilesUp = () => { $('notice').hidden = true; };
+const isPhone = () => matchMedia('(max-width: 899px)').matches;
+requestAnimationFrame(() => map.fit(START, isPhone() ? { t: 64, r: 105, b: 96, l: 12 } : { t: 30, r: 100, b: 30, l: 30 }));
+
+function plural(n, one, few, many) {
+  const a = Math.abs(n) % 100, b = a % 10;
+  if (a > 10 && a < 20) return many;
+  if (b > 1 && b < 5) return few;
+  if (b === 1) return one;
+  return many;
+}
+const norm = (s) => String(s || '').toLowerCase().replace(/ё/g, 'е').replace(/[«»"'.,!?()]/g, '').replace(/\s+/g, ' ').trim();
+const yearOf = (r) => { const y = parseInt(r.year, 10); return y >= 1980 && y <= 2100 ? y : null; };
+function passes(r) {
+  if (state.filter === 'all') return true;
+  const y = yearOf(r); if (!y) return false;
+  return state.filter === 'old' ? y <= 2015 : y >= 2016;
+}
+function safeLink(u) { try { const x = new URL(u); return /^https?:$/.test(x.protocol) ? x.href : ''; } catch (e) { return ''; } }
+
+function setView(v) {
+  state.view = v;
+  $('vOverview').hidden = v !== 'overview';
+  $('vDetail').hidden = v !== 'detail';
+  $('vForm').hidden = v !== 'form';
+  $('addBtn').hidden = v === 'form';
+  $('toggleBtn').textContent = v === 'overview' ? 'Список' : 'Назад';
+}
+function openPanel(open) {
+  $('panel').classList.toggle('open', open);
+  $('toggleBtn').setAttribute('aria-expanded', String(open));
+}
+
+function renderPins() {
+  const seen = new Set();
+  for (const r of state.rows) {
+    const id = String(r.id); seen.add(id);
+    let p = pins.get(id);
+    if (!p) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'pin';
+      b.setAttribute('aria-label', `${r.place}: ${r.artist} — ${r.track}`);
+      b.addEventListener('click', (e) => { e.stopPropagation(); select(id, false); });
+      p = map.add(Number(r.lat), Number(r.lng), b); pins.set(id, p);
+    }
+    p.el.hidden = !passes(r);
+    p.el.classList.toggle('sel', state.sel === id);
+  }
+  for (const [id, p] of pins) if (!seen.has(id)) { map.remove(p); pins.delete(id); }
+}
+function renderPanel() {
+  const vis = state.rows.filter(passes);
+  const places = new Map();
+  for (const r of vis) {
+    const k = norm(r.place); if (!k) continue;
+    const e = places.get(k) || { name: r.place, n: 0 }; e.n++; places.set(k, e);
+  }
+  $('sTracks').textContent = vis.length;
+  $('sTracksK').textContent = plural(vis.length, 'трек', 'трека', 'треков');
+  $('sPlaces').textContent = places.size;
+  $('sPlacesK').textContent = plural(places.size, 'место', 'места', 'мест');
+  $('pcount').textContent = vis.length;
+  const all = state.rows.length, old = state.rows.filter(r => { const y = yearOf(r); return y && y <= 2015; }).length, nw = state.rows.filter(r => { const y = yearOf(r); return y && y >= 2016; }).length;
+  $('cAll').textContent = all; $('cOld').textContent = old; $('cNew').textContent = nw;
+
+  const top = [...places.values()].sort((a, b) => b.n - a.n || a.name.localeCompare(b.name, 'ru')).slice(0, 6);
+  const ol = $('top'); ol.replaceChildren();
+  if (!top.length) {
+    const li = document.createElement('li'); li.className = 'empty';
+    li.textContent = 'Пока пусто. Нажмите «Добавить трек», затем место на карте.';
+    ol.append(li);
+  } else {
+    const max = top[0].n;
+    for (const p of top) {
+      const li = document.createElement('li');
+      const a = document.createElement('span'); a.textContent = p.name;
+      const n = document.createElement('span'); n.className = 'num'; n.textContent = '× ' + p.n;
+      const bw = document.createElement('div'); bw.className = 'barw';
+      const bi = document.createElement('i'); bi.style.width = (p.n / max * 100) + '%'; bw.append(bi);
+      li.append(a, n, bw); ol.append(li);
+    }
+  }
+  const ul = $('recent'); ul.replaceChildren();
+  const recent = vis.slice(-10).reverse();
+  if (!recent.length) {
+    const li = document.createElement('li'); li.className = 'empty';
+    li.textContent = 'Здесь появятся добавленные треки.';
+    ul.append(li);
+  }
+  for (const r of recent) {
+    const li = document.createElement('li'), b = document.createElement('button');
+    b.type = 'button';
+    const a = document.createElement('span'); a.className = 'pl'; a.textContent = r.place;
+    const t = document.createElement('span'); t.className = 'tr'; t.textContent = `${r.artist} — ${r.track}` + (yearOf(r) ? `, ${yearOf(r)}` : '');
+    b.append(a, t);
+    if (r.line) b.append(el('span', 'ln', '«' + r.line + '»'));
+    b.addEventListener('click', () => select(String(r.id), true));
+    li.append(b); ul.append(li);
+  }
+}
+function renderAll() { renderPins(); renderPanel(); }
+
+function card(nodes) {
+  const c = $('card'); c.replaceChildren(...nodes);
+  const x = document.createElement('button'); x.type = 'button'; x.className = 'btn ghost x'; x.textContent = 'Ко всем трекам';
+  x.addEventListener('click', () => { state.sel = null; renderPins(); setView('overview'); });
+  c.append(x);
+  setView('detail'); openPanel(true);
+}
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+function select(id, fly) {
+  const r = state.rows.find(x => String(x.id) === id); if (!r) return;
+  if (state.placing) return;
+  state.sel = id; renderPins();
+  if (fly) map.flyTo(Number(r.lat), Number(r.lng), Math.max(map.zoom, 13));
+  const nodes = [el('div', 'eyebrow', 'Место в треке'), el('div', 'pl', r.place)];
+  if (r.line) nodes.push(el('div', 'quote', String(r.line).split(' / ').join('\n')));
+  nodes.push(el('div', 'tr', `${r.artist} — «${r.track}»`));
+  if (yearOf(r)) nodes.push(el('div', 'meta', `Год: ${yearOf(r)}`));
+  const link = safeLink(r.link);
+  if (link) { const a = el('a', null, 'Слушать трек ↗'); a.href = link; a.target = '_blank'; a.rel = 'noopener noreferrer'; nodes.push(a); }
+  card(nodes);
+}
+
+/* добавление */
+function startPlacing() {
+  state.placing = true; state.sel = null; renderPins();
+  $('map').classList.add('placing');
+  setView('form'); $('err').textContent = '';
+  updatePointLine();
+  openPanel(!isPhone());
+  $('hint').hidden = false;
+}
+function stopPlacing() {
+  state.placing = false; state.draft = null;
+  $('map').classList.remove('placing'); $('hint').hidden = true;
+  if (draftItem) { map.remove(draftItem); draftItem = null; }
+  setView('overview');
+}
+function updatePointLine() {
+  const pl = $('pointline');
+  if (state.draft) { pl.className = 'pointline set'; pl.textContent = 'Точка стоит. Чтобы передвинуть, нажмите на карте ещё раз.'; }
+  else { pl.className = 'pointline unset'; pl.textContent = 'Нажмите на карте место, о котором поётся в треке'; }
+}
+function onMapTap(ll) {
+  if (!state.placing) return;
+  state.draft = ll;
+  if (!draftItem) { const d = document.createElement('div'); d.className = 'pin draft'; draftItem = map.add(ll.lat, ll.lng, d); }
+  else map.move(draftItem, ll.lat, ll.lng);
+  $('hint').hidden = true;
+  updatePointLine();
+  openPanel(true);
+  if (!$('fPlace').value) setTimeout(() => $('fPlace').focus({ preventScroll: true }), 50);
+}
+$('form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const v = (id) => $(id).value.replace(/\s+/g, ' ').trim();
+  const row = { place: v('fPlace'), artist: v('fArtist'), track: v('fTrack'), year: v('fYear'), link: v('fLink'),
+    line: $('fLine').value.split(/\r?\n/).map(s => s.replace(/\s+/g, ' ').trim()).filter(Boolean).join(' / ') };
+  const err = $('err');
+  if (!state.draft) { err.textContent = 'Поставьте точку: нажмите на карте место из трека.'; return; }
+  if (!row.place || !row.artist || !row.track) { err.textContent = 'Заполните место, исполнителя и трек.'; return; }
+  if (!row.line) { err.textContent = 'Добавьте строчку из трека, где упоминается это место.'; return; }
+  if (row.year && !/^\d{4}$/.test(row.year)) { err.textContent = 'Год — четыре цифры, например 2019. Или оставьте поле пустым.'; return; }
+  if (row.link && !safeLink(row.link)) { err.textContent = 'Ссылка должна начинаться с https://. Или оставьте поле пустым.'; return; }
+  row.lat = +state.draft.lat.toFixed(6); row.lng = +state.draft.lng.toFixed(6);
+  const btn = $('saveBtn'); btn.disabled = true; btn.textContent = 'Сохраняю…'; err.textContent = '';
+  try {
+    const res = await apiAdd(row);
+    if (!res || !res.ok) throw new Error((res && res.error) || 'Таблица не приняла запись.');
+    $('form').reset(); stopPlacing();
+    toast('Трек добавлен');
+    await refresh();
+    const mine = state.rows.slice().reverse().find(r => r.artist === row.artist && r.track === row.track);
+    if (mine) select(String(mine.id), false); else openPanel(false);
+  } catch (ex) {
+    err.textContent = (ex && ex.message && !/fetch|network/i.test(ex.message)) ? ex.message : 'Не получилось сохранить: нет связи с таблицей. Попробуйте ещё раз.';
+  } finally { btn.disabled = false; btn.textContent = 'Добавить на карту'; }
+});
+$('cancelBtn').addEventListener('click', () => { $('form').reset(); stopPlacing(); openPanel(false); });
+$('addBtn').addEventListener('click', startPlacing);
+$('toggleBtn').addEventListener('click', () => {
+  if (state.view !== 'overview') { state.sel = null; renderPins(); if (state.placing) stopPlacing(); setView('overview'); openPanel(true); return; }
+  openPanel(!$('panel').classList.contains('open'));
+});
+$('zin').addEventListener('click', () => map.zoomIn());
+$('zout').addEventListener('click', () => map.zoomOut());
+$('chips').addEventListener('click', (e) => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  state.filter = b.dataset.f;
+  for (const c of $('chips').children) c.setAttribute('aria-pressed', String(c === b));
+  renderPins(); renderPanel();
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && state.placing) { $('form').reset(); stopPlacing(); } });
+
+let toastT = 0;
+function toast(t) { const n = $('toast'); n.textContent = t; n.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => n.classList.remove('show'), 2200); }
+
+function setStatus(ok) {
+  if (demo) return;
+  const s = $('status'); s.hidden = false;
+  s.className = 'status ' + (ok ? 'ok' : 'err');
+  s.textContent = ok ? 'Карта общая, обновляется сама' : 'Нет связи с таблицей. Пробую снова…';
+}
+async function refresh() {
+  try {
+    const res = await apiLoad();
+    if (res && res.ok && Array.isArray(res.rows)) {
+      state.rows = res.rows.filter(r => isFinite(+r.lat) && isFinite(+r.lng));
+      setStatus(true); renderAll();
+    } else setStatus(false);
+  } catch (e) { setStatus(false); }
+}
+
+/* старт */
+$('demo').hidden = !demo;
+if (location.protocol === 'file:') {
+  const n = $('notice');
+  n.replaceChildren(el('b', null, 'Улицы появятся на сайте'), document.createTextNode('Страница открыта как файл с компьютера, а сервер OpenStreetMap такие страницы не обслуживает. Когда страница будет опубликована в интернете, карта Москвы появится. Точки ставить можно уже сейчас.'));
+  n.hidden = false;
+}
+if (/^https?:$/.test(location.protocol)) {
+  const url = location.origin + location.pathname;
+  $('url').textContent = url.replace(/^https?:\/\//, '').replace(/\/(index\.html)?$/, '');
+  const qr = $('qr');
+  qr.onerror = () => { qr.hidden = true; };
+  qr.src = 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=0&data=' + encodeURIComponent(url);
+  $('join').hidden = false;
+}
+setView('overview');
+renderAll();
+refresh();
+if (!demo) setInterval(() => { if (document.visibilityState === 'visible' && !state.placing) refresh(); }, POLL_MS);
+</script>
+</body>
+</html>
