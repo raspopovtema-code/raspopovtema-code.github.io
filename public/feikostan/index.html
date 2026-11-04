@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Игра</title>
+<style>
+  :root{
+    --card:#171a21;
+    --soft:#202532;
+    --text:#f3f5f8;
+    --muted:#aab4c4;
+    --accent:#ffd54f;
+    --accent2:#8bd3ff;
+    --border:#2c3343;
+    --track:#0f1320;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background:linear-gradient(180deg,#0d1016,#111725 55%,#0f1115);
+    color:var(--text);
+  }
+  .wrap{
+    max-width:1320px;
+    margin:0 auto;
+    padding:28px 18px 48px;
+  }
+  .hero,.card{
+    border:1px solid var(--border);
+    background:rgba(23,26,33,.94);
+    border-radius:24px;
+    padding:22px;
+    box-shadow:0 18px 50px rgba(0,0,0,.2);
+  }
+  .btnrow{
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+  .btn{
+    appearance:none;
+    border:none;
+    cursor:pointer;
+    padding:14px 18px;
+    border-radius:18px;
+    background:linear-gradient(180deg,#ffde73,#ffc928);
+    color:#181203;
+    font-weight:800;
+    font-size:15px;
+    box-shadow:0 10px 24px rgba(255,201,40,.22);
+  }
+  .btn.secondary{
+    background:#222838;
+    color:var(--text);
+    box-shadow:none;
+    border:1px solid var(--border);
+  }
+  .grid{
+    display:grid;
+    grid-template-columns: 1.35fr .65fr;
+    gap:18px;
+    margin-top:18px;
+    align-items:start;
+  }
+  h2,h3{margin:0 0 12px}
+  .scene-title{
+    font-size:28px;
+    line-height:1.1;
+    margin-bottom:10px;
+  }
+  .scene-text{
+    font-size:21px;
+    line-height:1.62;
+  }
+  .choices{
+    display:grid;
+    gap:14px;
+    margin-top:22px;
+  }
+  .choice{
+    width:100%;
+    text-align:left;
+    padding:18px;
+    border-radius:18px;
+    border:1px solid var(--border);
+    background:#1b2130;
+    color:var(--text);
+    cursor:pointer;
+    transition:transform .12s ease, border-color .12s ease, background .12s ease;
+    font-size:18px;
+    line-height:1.45;
+  }
+  .choice:hover{
+    transform:translateY(-1px);
+    border-color:#47516a;
+    background:#20283a;
+  }
+  .choice small{
+    display:block;
+    color:var(--muted);
+    margin-top:8px;
+    line-height:1.45;
+    font-size:15px;
+  }
+  .choice:disabled{
+    cursor:default;
+    opacity:.72;
+  }
+  .feedback{min-height:10px;margin-top:10px;}
+  .hidden{display:none}
+  .side-title{font-size:22px;margin-bottom:12px;}
+  .progress{color:var(--muted);font-size:15px;margin-bottom:20px;}
+  .meter{margin-bottom:18px;}
+  .meter-label{font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;}
+  .bar{width:100%;height:10px;border-radius:999px;background:var(--track);border:1px solid #31394a;overflow:hidden;}
+  .fill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .4s ease;}
+  .meter-value{margin-top:4px;color:var(--muted);font-size:12px;}
+  .meter-comment{margin-top:4px;color:var(--accent);font-size:12px;font-style:italic;min-height:15px;}
+  .note{margin-top:20px;color:var(--muted);font-size:14px;line-height:1.55;}
+  .endbox{padding:16px;border-radius:16px;background:var(--soft);border:1px solid var(--border);margin-top:14px;}
+  .endbox h3{color:var(--accent2);font-size:20px;margin-bottom:8px;}
+  .endbox p{margin:0;line-height:1.65;color:#dde6f3;font-size:17px;}
+  .intro-lead{color:var(--muted);font-size:14px;margin-bottom:16px;letter-spacing:.02em;text-transform:uppercase;}
+  @media (max-width: 980px){
+    .grid{grid-template-columns:1fr}
+    .scene-title{font-size:24px}
+    .scene-text{font-size:18px}
+    .choice{font-size:17px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <div class="btnrow">
+      <button class="btn" id="startBtn">Начать</button>
+      <button class="btn secondary" id="resetBtn">Сбросить</button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div id="introBlock">
+        <div class="intro-lead">Кризисная коммуникация. Симуляция</div>
+        <h2 class="scene-title">Ситуация</h2>
+        <div class="scene-text">
+          Вы ушли из журналистики, потому что денег там нет, а нервов тратится столько, что вы поседели уже в 23. Теперь вы — пиарщик губернатора небольшой республики Фейкостан.
+          <br><br>
+          Вы сидите утром в своём светлом кабинете с собственной кофемашиной после вчерашней тусовки в честь вашего назначения. Голова раскалывается, к виску вы прикладываете банку безлимитного пива из холодильника для гостей. И всё равно это ваш лучший день в жизни: вам наконец-то не надо ехать писать про открытие очередного беспонтового сквера, как в редакции газеты «Вести Запупинска», из которой вы уволились, чтобы начать новую жизнь.
+          <br><br>
+          И тут секретарша губернатора кидает вам ссылку в мессенджер Max. Без какого-либо комментария. Вы открываете ссылку и давитесь пивом. Местное оппозиционное издание «Правдорубль» 18 минут назад выпустило расследование: губернатор позавчера встречался с местным криминальным авторитетом, владельцем сети магазинов «Шестёрочка», и получил откат за разрешение снести местный памятник архитектуры XVI века — деревянную колокольню — и воткнуть на её месте торговый павильон с миндальным рафчиком, выпечкой и отделом «фермерские продукты».
+          <br><br>
+          ЧТО ДЕЛАТЬ?
+        </div>
+      </div>
+
+      <div id="sceneBlock" class="hidden">
+        <h2 class="scene-title" id="sceneTitle"></h2>
+        <div class="scene-text" id="sceneText"></div>
+        <div class="choices" id="choices"></div>
+        <div class="feedback" id="feedback"></div>
+        <div class="btnrow hidden" id="nextWrap" style="margin-top:18px;">
+          <button class="btn" id="nextBtn">Дальше</button>
+        </div>
+      </div>
+
+      <div id="endBlock" class="hidden">
+        <h2 class="scene-title">Что это была за модель</h2>
+        <div class="scene-text" style="margin-bottom:14px;">
+          В первом проходе вы просто выбирали, как тушить скандал. Но на самом деле игра была собрана вокруг конкретной информационной модели. Её сила не в одной красивой лжи, а в том, что она превращает информационное поле в кашу — аудитории всё труднее понять, что вообще считать фактом.
+        </div>
+
+        <div class="endbox">
+          <h3>1. Везде и сразу</h3>
+          <p>Ключевая ставка — не на один официальный комментарий, а на то, чтобы одна и та же версия одновременно жила в мессенджерах, соцсетях, в коротких видео, в комментариях, в районных пабликах и в разговорах «обычных людей». Когда сообщение звучит сразу из множества точек и через разные каналы, у аудитории возникает ощущение, что оно подтверждается само собой — не потому что доказано, а потому что его слышно буквально отовсюду. Исследования показывают: сообщения из нескольких независимых источников убеждают сильнее, чем из одного, — даже если все эти источники говорят по одной указке.</p>
+        </div>
+
+        <div class="endbox">
+          <h3>2. Не замолкать</h3>
+          <p>Пока журналисты проверяют бумажки и обзванивают источники, такая модель уже занимает эфир. Она выигрывает тем, что вбрасывает версию первой — а первое впечатление очень устойчиво: человек с большей вероятностью примет первую полученную информацию и будет опираться на неё даже при появлении противоречащих данных. Дальше версию не дают умереть: пост, мем, кружок, комментарий, короткая реплика, снова пост. Одна и та же мысль возвращается снова и снова — и за счёт этого становится знакомой. А знакомое сообщение люди часто воспринимают как более достоверное: этот феномен называют «эффектом иллюзорной правды». Есть и ещё один механизм: знакомые аргументы обрабатываются менее критично — человек хуже различает слабые и сильные доводы, если уже встречал их раньше.</p>
+        </div>
+
+        <div class="endbox">
+          <h3>3. А был ли мальчик?</h3>
+          <p>Если появляются неудобные факты, задача уже не в том, чтобы честно их разобрать. Гораздо выгоднее атаковать саму возможность проверки: видео — монтаж, документы — фальшивка, расследование — заказ, свидетели — ангажированные. Такая модель не боится вымысла — при информационной перегрузке люди используют упрощённые стратегии оценки достоверности и плохо различают правду и ложь. Особенно убедительными оказываются сообщения, которые вызывают эмоции (страх, возмущение) и совпадают с уже существующими у аудитории убеждениями. А сфабрикованные «доказательства» повышают доверие независимо от их реального качества.</p>
+        </div>
+
+        <div class="endbox">
+          <h3>4. Пусть голова болит у них</h3>
+          <p>Обычная публичная коммуникация боится противоречий. Эта модель — нет. Сегодня можно говорить, что встречи не было. Через час — что была, но по рабочему вопросу. Потом — что видео старое. Потом — что это дипфейк. Версии не обязаны сходиться между собой. Чем больше несовместимых объяснений плавает в поле, тем труднее аудитории собрать единую картину. Важно: потери доверия из-за противоречий компенсируются другими факторами — масштабом, повторением, форматом подачи. Аудитория часто оценивает каждую новую версию отдельно, если сохраняется ощущение, что источник «в целом говорит что-то важное».</p>
+        </div>
+
+        <div class="endbox">
+          <h3>5. Голос с кухни</h3>
+          <p>Когда версия звучит не только от официальных аккаунтов, но и от «обычных людей» — соседей, знакомых, администраторов районных чатов — она воспринимается принципиально иначе. Сообщения от «своей» группы считаются более достоверными. Поддержка большого числа пользователей повышает доверие к информации, даже если их надёжность не проверяется. При недостатке информации люди ориентируются на мнения окружающих — и в условиях информационной перегрузки доверяют «таким же, как я» больше, чем официальным экспертам. Работает и в обратную сторону: атаки на репутацию источника со стороны «обычных людей» в комментариях снижают доверие к нему — даже без каких-либо доказательств.</p>
+        </div>
+
+        <div class="endbox">
+          <h3>Эффект спящего воздействия</h3>
+          <p>Есть механизм, который делает эту модель особенно долгоиграющей. Со временем человек помнит информацию, но забывает источник. То есть через неделю он уже не вспомнит, что прочитал это в сомнительном районном паблике или от анонимного комментатора — он просто будет «знать», что «что-то такое было». Даже опровергнутые сведения продолжают влиять на мышление: люди плохо различают ложную и достоверную информацию, особенно если источник давно забыт. Именно поэтому интенсивный вброс в начале кризиса даёт эффект, который не исчезает после опровержения — он просто уходит в фон.</p>
+        </div>
+
+        <div class="endbox">
+          <h3>Что важно заметить</h3>
+          <p>Самое неприятное здесь то, что такая модель не обязательно заставляет людей искренне поверить в конкретную ложь. Часто ей достаточно добиться другого результата: чтобы люди устали, запутались, махнули рукой и решили, что истину всё равно уже не установить. Именно поэтому она так живуча. Её задача — не доказать, а перегрузить; не объяснить, а замутнить.</p>
+        </div>
+
+        <div class="endbox">
+          <h3>Второй проход</h3>
+          <p>Теперь можно пройти игру ещё раз и уже сознательно посмотреть, какие решения сильнее всего разгоняют именно эту логику: где срабатывает масштаб, где темп и повтор, где подрыв доверия к фактам, где полезна путаница между версиями — и где работает голос с кухни.</p>
+        </div>
+
+        <div class="btnrow" style="margin-top:18px;">
+          <button class="btn" onclick="restartGame()">Пройти ещё раз</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="side-title">Показатели</div>
+      <div class="progress" id="progressText">0 / 8</div>
+
+      <div class="meter">
+        <div class="meter-label">Везде и сразу</div>
+        <div class="bar"><div class="fill" id="channelsFill"></div></div>
+        <div class="meter-value" id="channelsValue">0 / 100</div>
+        <div class="meter-comment" id="channelsComment"></div>
+      </div>
+
+      <div class="meter">
+        <div class="meter-label">Не замолкать</div>
+        <div class="bar"><div class="fill" id="speedFill"></div></div>
+        <div class="meter-value" id="speedValue">0 / 100</div>
+        <div class="meter-comment" id="speedComment"></div>
+      </div>
+
+      <div class="meter">
+        <div class="meter-label">А был ли мальчик?</div>
+        <div class="bar"><div class="fill" id="realityFill"></div></div>
+        <div class="meter-value" id="realityValue">0 / 100</div>
+        <div class="meter-comment" id="realityComment"></div>
+      </div>
+
+      <div class="meter">
+        <div class="meter-label">Пусть голова болит у них</div>
+        <div class="bar"><div class="fill" id="inconsistencyFill"></div></div>
+        <div class="meter-value" id="inconsistencyValue">0 / 100</div>
+        <div class="meter-comment" id="inconsistencyComment"></div>
+      </div>
+
+      <div class="meter">
+        <div class="meter-label">Голос с кухни</div>
+        <div class="bar"><div class="fill" id="socialFill"></div></div>
+        <div class="meter-value" id="socialValue">0 / 100</div>
+        <div class="meter-comment" id="socialComment"></div>
+      </div>
+
+      <div class="note">
+        Во время первого прохода можно просто наблюдать, как двигаются шкалы, и ничего не объяснять. Разбор — в конце.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const KEYS = ['channels','speed','reality','inconsistency','social'];
+
+const scenes = [
+  {
+    title: "Ход 1",
+    text: "Вы ещё даже не успели допить своё похмельное пиво, а чат уже горит. Журналисты звонят, местные паблики цитируют «Правдорубль», в комментариях начинают писать: «Ну всё ясно». Что делаете в первые полчаса?",
+    choices: [
+      {
+        text: "Чёткую версию так быстро не придумать. Запускаем бредовую: губернатор не мог взять взятку, потому что он... работает на ФСБ. Главное — выйти первыми и сразу через все каналы.",
+        sub: "Telegram, VK, эфир, блогеры, боты, бюджетники, очень сомнительные районные паблики.",
+        effect: {channels:22, speed:20, reality:10, inconsistency:0, social:0},
+        comments: {channels:"все углы заняты раньше, чем кто-то успел проснуться", speed:"версия вышла до того, как появился вопрос", reality:"правдоподобие — не обязательное условие"}
+      },
+      {
+        text: "Через три часа публикуем официальное заявление в канале губернатора.",
+        sub: "«Это грязная атака на человека, который наводит порядок в регионе». И дальше — про достижения народного хозяйства.",
+        effect: {channels:7, speed:5, reality:4, inconsistency:0, social:0},
+        comments: {channels:"один канал — один голос", speed:"за три часа чужая версия уже стала первой"}
+      },
+      {
+        text: "Просто не замечаем расследование.",
+        sub: "Делать нам нечего — всякую хрень читать.",
+        effect: {channels:0, speed:0, reality:0, inconsistency:0, social:0},
+        comments: {}
+      }
+    ]
+  },
+  {
+    title: "Ход 2",
+    text: "Спустя пять часов в мессенджерe Max расходится ролик: губернатор в ресторане жмёт руку владельцу «Шестёрочки», потом выходит с пухлым бумажным пакетом, садится в чёрный Haval и уезжает. Не очень похоже на операцию ФСБ. Что делаем с видео?",
+    choices: [
+      {
+        text: "Одновременно продвигаем несколько версий: «Монтаж», «Вырвано из контекста», «Старое видео», «Искусственный интеллект», «Происки коллективного Запада».",
+        sub: "Пусть все бегают по разным коридорам.",
+        effect: {channels:10, speed:8, reality:22, inconsistency:25, social:0},
+        comments: {reality:"чем больше объяснений — тем меньше шансов проверить хоть одно", inconsistency:"пять версий сразу: ни одна не главная, все мешают друг другу"}
+      },
+      {
+        text: "Говорим, что встреча была, но обсуждали программу благоустройства парка и строительства собачьего приюта.",
+        sub: "Сдержанно и по-чиновничьи.",
+        effect: {channels:4, speed:4, reality:5, inconsistency:3, social:0},
+        comments: {reality:"ложь аккуратная, но одна и проверяемая"}
+      },
+      {
+        text: "Ничего не отвечаем и надеемся, что видео само утонет в повестке.",
+        sub: "Вдруг сегодня всех отвлечёт прорыв трубы в парке.",
+        effect: {channels:0, speed:0, reality:0, inconsistency:0, social:0},
+        comments: {}
+      }
+    ]
+  },
+  {
+    title: "Ход 3",
+    text: "Уже федеральные каналы подхватили, и редактор вашей бывшей газеты язвительно написал в своем канале: «Ну что, карьерный рост?» Скандал не утихает. Может, обратно писать про скверы?",
+    choices: [
+      {
+        text: "Весь день непрерывно повторяем один и тот же тезис в жанре «мы никогда не узнаем всей правды» в разных форматах на разных (в том числе маргинальных) ресурсах.",
+        sub: "Пост, мем, кружок, комментарий, реплика в эфире, снова пост. Не новые аргументы — тот же, но снова и снова. К третьему разу люди уже не разбирают его — они просто его узнают.",
+        effect: {channels:14, speed:24, reality:5, inconsistency:0, social:3},
+        comments: {speed:"узнавание и проверка — разные вещи. узнавание работает автоматически", channels:"разные форматы — ощущение, что об этом говорят все"}
+      },
+      {
+        text: "Делаем один длинный развёрнутый комментарий в авторитетном издании о том, что все неправда, и ждём, что все его внимательно прочитают.",
+        sub: "Почти как колонка совестливого журналиста, которым вы больше не являетесь.",
+        effect: {channels:4, speed:4, reality:2, inconsistency:0, social:0},
+        comments: {speed:"один раз — не повтор, убедительности нет"}
+      },
+      {
+        text: "Решаем, что люди сами устанут и завтра будут обсуждать что-нибудь другое.",
+        sub: "Например, нового леопарда в зоопарке.",
+        effect: {channels:0, speed:0, reality:0, inconsistency:0, social:0},
+        comments: {}
+      }
+    ]
+  },
+  {
+    title: "Ход 4",
+    text: "Ваши союзники уже наговорили лишнего. Один депутат заявил, что встречи вообще не было. Другой написал, что встреча была, но губернатор отказался от взятки. Третий поделился, что губернатор был пьян, а с пьяных спроса нет. Что делать с этим зоопарком?",
+    choices: [
+      {
+        text: "Все ок: пусть одни говорят одно, другие — другое, третьи — третье.",
+        sub: "Противоречия не страшны, пока шум не стихает. Главное — чтобы в голове не складывалась единая картина.",
+        effect: {channels:10, speed:8, reality:10, inconsistency:25, social:0},
+        comments: {inconsistency:"три версии одновременно — аудитория устаёт искать правую", channels:"чем больше говорящих, тем убедительнее — даже если они противоречат друг другу"}
+      },
+      {
+        text: "Оставляем две версии: официальную и более мутную неофициальную. Капелька бреда никогда не помешает.",
+        sub: "Пусть вроде бы есть порядок, но и дымовая завеса тоже сохраняется.",
+        effect: {channels:6, speed:5, reality:5, inconsistency:10, social:0},
+        comments: {inconsistency:"две версии — компромисс между порядком и туманом"}
+      },
+      {
+        text: "Жёстко закрепляем одну версию для всех и запрещаем любые отклонения от линии партии.",
+        sub: "Как будто все партийцы внезапно стали сотрудниками образцовой пресс-службы.",
+        effect: {channels:2, speed:3, reality:1, inconsistency:0, social:0},
+        comments: {inconsistency:"одна версия — красиво, но депутаты всё равно не удержатся"}
+      }
+    ]
+  },
+  {
+    title: "Ход 5",
+    text: "Ну все, история ушла в народ. Тётя Люда в чате «Наш микрорайон» пишет: «Ну вот, я так и знала». Мужик с аватаркой волка репостит расследование с комментарием «всё как всегда». Районная среда работает против вас. Че делать?",
+    choices: [
+      {
+        text: "Запускаем «обычных людей», которые говорят версию губернатора как будто от себя — и заодно сомневаются в «Правдорубле». Заводят разговоры в пивнухах, подсаживаются к бабушкам на лавках, в поликлинике в очереди начинают рассуждать.",
+        sub: "Не «пресс-служба опровергает», а «вот мой сосед говорит, что на самом деле издание давно куплено». Без доказательств — просто сомнение в комментариях.",
+        effect: {channels:12, speed:6, reality:8, inconsistency:3, social:25},
+        comments: {social:"сосед убеждает лучше, чем пресс-служба — и ломает доверие к источнику", reality:"сомнение в источнике не требует доказательств"}
+      },
+      {
+        text: "Продвигаем версию губернатора через «обычных людей» — но без атаки на «Правдорубль». Че ему рекламу делать?",
+        sub: "Пусть версия звучит как народная, но источник не трогаем.",
+        effect: {channels:10, speed:5, reality:3, inconsistency:1, social:14},
+        comments: {social:"голос с кухни работает — но «Правдорубль» остаётся незапятнанным"}
+      },
+      {
+        text: "Остаёмся только в официальных каналах, в народную среду не заходим.",
+        sub: "Для любителей старой доброй бюрократической прозы.",
+        effect: {channels:4, speed:3, reality:0, inconsistency:0, social:0},
+        comments: {channels:"официальный голос — единственный, а значит чужой"}
+      }
+    ]
+  },
+  {
+    title: "Ход 6",
+    text: "Третий день. Публика уже не различает, что было в расследовании, что сказали вы, что придумал депутат, а что бабка в поликлинике.",
+    choices: [
+      {
+        text: "Отлично. Люди начинают воспринимать наше сообщение в жанре «мы никогда не узнаем всей правды» как нечто само собой разумеющееся. Добавляем новых спикеров, которые говорят то же самое, но другими словами.",
+        sub: "«Как мы уже говорили...» Новые голоса создают ощущение, что это общее мнение, а не версия пресс-службы.",
+        effect: {channels:14, speed:22, reality:8, inconsistency:5, social:5},
+        comments: {speed:"пятый повтор — и аргумент уже не анализируют, его просто узнают как правду", channels:"новые спикеры — ощущение независимого подтверждения"}
+      },
+      {
+        text: "Просто повторяем старый тезис без новых спикеров, зачем нам ТАКОЙ хаос?.",
+        sub: "Ставка на знакомость и усталость аудитории.",
+        effect: {channels:5, speed:14, reality:3, inconsistency:1, social:0},
+        comments: {speed:"повтор работает — но без новых голосов эффект слабее"}
+      },
+      {
+        text: "Останавливаемся и спокойно всё объясняем по порядку: у нас было время, чтобы наконец выработать адекватную версию.",
+        sub: "Как будто ещё можно всех собрать за один стол и договориться о единой линии.",
+        effect: {channels:0, speed:0, reality:0, inconsistency:0, social:0},
+        comments: {}
+      }
+    ]
+  },
+  {
+    title: "Ход 7",
+    text: "Помощник приносит идею: не просто опровергать расследование, а запульнуть свое — «Кто финансирует «Правдорубль»?». С документами. Липовыми, но убедительными на вид. И с заголовком про угрозу региону, которую несет это издание. А еще лучше про угрозу детям! Как поступаете?",
+    choices: [
+      {
+        text: "Делаем: поддельные документы, мощный заголовок, все оформлено как серьезное расследование. Которое, правда, можно разбомбить в два счета.",
+        sub: "Наличие «доказательств» повышает доверие независимо от качества. Страх и возмущение отключают желание проверять.",
+        effect: {channels:12, speed:8, reality:25, inconsistency:5, social:6},
+        comments: {reality:"доказательство — любое — делает версию убедительнее", social:"возмущение распространяется само: люди делятся тем, что злит"}
+      },
+      {
+        text: "Публично сомневаемся в мотивах «Правдорубля» — без документов, просто намёками.",
+        sub: "«Интересно, кому выгодно это расследование именно сейчас?» Атака на источник снижает доверие к нему даже без доказательств.",
+        effect: {channels:7, speed:5, reality:12, inconsistency:3, social:4},
+        comments: {reality:"сомнение без доказательств тоже работает — если повторять достаточно часто"}
+      },
+      {
+        text: "Не трогаем издание — отвечаем только по существу. Не надо делать рекламу!.",
+        sub: "Профессионально. Но скучно.",
+        effect: {channels:2, speed:2, reality:0, inconsistency:0, social:0},
+        comments: {}
+      }
+    ]
+  },
+  {
+    title: "Ход 8",
+    text: "Прошла неделя. Выходит «независимое» расследование от малоизвестного издания «Объективно.рф» — оно «опровергает» «Правдорубль» и закрывает тему в пользу губернатора. Издание вы, конечно, учредили три дня назад через подставных людей. Круто?",
+    choices: [
+      {
+        text: "Максимально тиражируем «опровержение» — официальные каналы, «обычные люди», блогеры. Давим на то, что «Объективно.рф» - это независимый голос. Который, честно говоря, при внимательном рассмотрении выглядит как сверстанная на коленке хрень",
+        sub: "Через неделю люди забудут источник — останется только ощущение, что «там разобрались и всё оказалось нормально».",
+        effect: {channels:18, speed:14, reality:20, inconsistency:5, social:10},
+        comments: {reality:"формат «как у нормального СМИ» — и доверие появляется автоматически", social:"независимый голос убеждает сильнее официального", speed:"через неделю помнят вывод, но не помнят, кто его сделал"}
+      },
+      {
+        text: "Публикуем «опровержение» только в официальных каналах губернатора — без легенды о независимости издания. У людей вызывает недоверие словосочетание «независимые СМИ».",
+        sub: "Ок.",
+        effect: {channels:8, speed:8, reality:8, inconsistency:2, social:0},
+        comments: {reality:"без легенды о независимости это просто ещё одно заявление"}
+      },
+      {
+        text: "Не трогаем тему — даём скандалу умереть своей смертью.",
+        sub: "Эффект спящего воздействия работает в обе стороны: забудут и расследование, и ваши вбросы.",
+        effect: {channels:0, speed:0, reality:0, inconsistency:0, social:0},
+        comments: {}
+      }
+    ]
+  }
+];
+
+let currentScene = -1;
+let scores = {channels:0, speed:0, reality:0, inconsistency:0, social:0};
+
+function clamp(n){ return Math.max(0, Math.min(100, n)); }
+
+function clearComments(){
+  KEYS.forEach(k => { document.getElementById(k+'Comment').textContent = ''; });
+}
+
+function updateBars(comments){
+  KEYS.forEach(k => {
+    scores[k] = clamp(scores[k]);
+    document.getElementById(k+'Fill').style.width = scores[k]+'%';
+    document.getElementById(k+'Value').textContent = scores[k]+' / 100';
+    const el = document.getElementById(k+'Comment');
+    el.textContent = (comments && comments[k]) ? '→ '+comments[k] : '';
+  });
+}
+
+function startGame(){
+  document.getElementById('introBlock').classList.add('hidden');
+  document.getElementById('endBlock').classList.add('hidden');
+  document.getElementById('sceneBlock').classList.remove('hidden');
+  currentScene = 0;
+  renderScene();
+}
+
+function renderScene(){
+  const scene = scenes[currentScene];
+  document.getElementById('sceneTitle').textContent = scene.title;
+  document.getElementById('sceneText').textContent = scene.text;
+  document.getElementById('progressText').textContent = (currentScene+1)+' / '+scenes.length;
+  document.getElementById('feedback').innerHTML = '';
+  document.getElementById('nextWrap').classList.add('hidden');
+  clearComments();
+
+  const choicesEl = document.getElementById('choices');
+  choicesEl.innerHTML = '';
+  scene.choices.forEach((choice, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'choice';
+    btn.innerHTML = '<strong>'+choice.text+'</strong><small>'+choice.sub+'</small>';
+    btn.onclick = () => pickChoice(idx);
+    choicesEl.appendChild(btn);
+  });
+}
+
+function pickChoice(idx){
+  const choice = scenes[currentScene].choices[idx];
+  KEYS.forEach(k => { scores[k] += (choice.effect[k] || 0); });
+  updateBars(choice.comments);
+  document.querySelectorAll('.choice').forEach(btn => { btn.disabled = true; });
+  document.getElementById('nextWrap').classList.remove('hidden');
+}
+
+function nextScene(){
+  currentScene += 1;
+  if(currentScene >= scenes.length){ showEnding(); }
+  else { renderScene(); }
+}
+
+function showEnding(){
+  document.getElementById('sceneBlock').classList.add('hidden');
+  document.getElementById('endBlock').classList.remove('hidden');
+  document.getElementById('progressText').textContent = 'Финиш';
+}
+
+function resetState(){
+  currentScene = -1;
+  scores = {channels:0, speed:0, reality:0, inconsistency:0, social:0};
+  updateBars(null);
+  clearComments();
+  document.getElementById('sceneBlock').classList.add('hidden');
+  document.getElementById('endBlock').classList.add('hidden');
+  document.getElementById('introBlock').classList.remove('hidden');
+  document.getElementById('choices').innerHTML = '';
+  document.getElementById('feedback').innerHTML = '';
+  document.getElementById('nextWrap').classList.add('hidden');
+  document.getElementById('progressText').textContent = '0 / '+scenes.length;
+}
+
+function restartGame(){ resetState(); startGame(); }
+
+document.getElementById('startBtn').addEventListener('click', startGame);
+document.getElementById('resetBtn').addEventListener('click', resetState);
+document.getElementById('nextBtn').addEventListener('click', nextScene);
+
+updateBars(null);
+</script>
+</body>
+</html>

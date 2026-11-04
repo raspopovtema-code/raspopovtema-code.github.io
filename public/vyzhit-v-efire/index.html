@@ -1,0 +1,2076 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ВЫЖИТЬ В ЭФИРЕ</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F7F5F0;
+    --surface: #FFFFFF;
+    --border: #E2DDD6;
+    --text: #1A1814;
+    --text-muted: #6B6560;
+    --rkn: #C23B22;
+    --rkn-light: #FDF0EE;
+    --rkn-border: #F0C4BC;
+    --red-light: #FCEEED;
+    --red-border: #E8B4AD;
+    --green: #2A6B3C;
+    --green-light: #EEF5F1;
+    --green-border: #B4D4BF;
+    --accent: #1A1814;
+    --yellow: #F5A623;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--text);
+    color: var(--bg);
+    padding: 16px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .logo span {
+    color: var(--yellow);
+  }
+
+  .round-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    background: rgba(255,255,255,0.1);
+    padding: 4px 12px;
+    border-radius: 2px;
+    letter-spacing: 0.1em;
+  }
+
+  /* SCOREBOARD */
+  .scoreboard {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    padding: 24px 40px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .score-side {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .score-side.rkn { align-items: flex-start; }
+  .score-side.redakcia { align-items: flex-end; }
+
+  .score-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .score-label.rkn { color: var(--rkn); }
+  .score-label.red { color: var(--green); }
+
+  .score-number {
+    font-family: 'Playfair Display', serif;
+    font-size: 56px;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .score-number.rkn { color: var(--rkn); }
+  .score-number.red { color: var(--green); }
+
+  .score-max {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .score-divider {
+    width: 1px;
+    background: var(--border);
+    margin: 0 32px;
+    position: relative;
+  }
+
+  .score-divider::after {
+    content: '↔';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--surface);
+    padding: 4px 8px;
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+
+  .win-bar {
+    width: 100%;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+
+  .win-bar-fill {
+    height: 100%;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 2px;
+  }
+
+  .win-bar-fill.rkn { background: var(--rkn); }
+  .win-bar-fill.red { background: var(--green); }
+
+  /* MAIN LAYOUT */
+  .main {
+    display: flex;
+    flex: 1;
+    gap: 0;
+  }
+
+  /* SIDEBAR - кейсы */
+  .sidebar {
+    width: 220px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 24px 0;
+    flex-shrink: 0;
+  }
+
+  .sidebar-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 0 20px 12px;
+  }
+
+  .case-item {
+    padding: 12px 20px;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .case-item:hover { background: var(--bg); }
+
+  .case-item.active {
+    border-left-color: var(--text);
+    background: var(--bg);
+  }
+
+  .case-item.done {
+    opacity: 0.5;
+  }
+
+  .case-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    width: 20px;
+    flex-shrink: 0;
+  }
+
+  .case-name {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.3;
+  }
+
+  .case-status {
+    margin-left: auto;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .case-status.rkn-won { background: var(--rkn); }
+  .case-status.red-won { background: var(--green); }
+  .case-status.draw { background: var(--yellow); }
+
+  /* CONTENT AREA */
+  .content {
+    flex: 1;
+    padding: 40px;
+    max-width: 800px;
+  }
+
+  .case-header {
+    margin-bottom: 32px;
+  }
+
+  .case-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .case-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  /* SCENARIO CARD */
+  .scenario-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 28px;
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+
+  .scenario-card::before {
+    content: '«';
+    position: absolute;
+    top: -10px;
+    left: 16px;
+    font-family: 'Playfair Display', serif;
+    font-size: 80px;
+    color: var(--border);
+    line-height: 1;
+  }
+
+  .scenario-text {
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--text);
+    position: relative;
+    z-index: 1;
+  }
+
+  /* OPTIONS */
+  .options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+
+  .option-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px 16px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13px;
+    line-height: 1.4;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    box-shadow: var(--shadow);
+  }
+
+  .option-btn:hover {
+    border-color: var(--text);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+
+  .option-btn.selected-good {
+    border-color: var(--green);
+    background: var(--green-light);
+  }
+
+  .option-btn.selected-bad {
+    border-color: var(--rkn);
+    background: var(--rkn-light);
+  }
+
+  .option-letter {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    background: var(--bg);
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 2px;
+    flex-shrink: 0;
+    color: var(--text-muted);
+  }
+
+  /* REVEAL ITEMS */
+  .reveals-section {
+    margin-bottom: 24px;
+  }
+
+  .reveals-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+
+  .reveal-items {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .reveal-item {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+  }
+
+  .reveal-trigger {
+    padding: 12px 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: 500;
+    transition: background 0.15s;
+    gap: 12px;
+  }
+
+  .reveal-trigger:hover { background: var(--bg); }
+
+  .reveal-trigger.red-item { border-left: 3px solid var(--rkn); }
+  .reveal-trigger.yellow-item { border-left: 3px solid var(--yellow); }
+  .reveal-trigger.green-item { border-left: 3px solid var(--green); }
+
+  .reveal-arrow {
+    font-size: 10px;
+    color: var(--text-muted);
+    transition: transform 0.2s;
+    flex-shrink: 0;
+  }
+
+  .reveal-item.open .reveal-arrow { transform: rotate(90deg); }
+
+  .reveal-content {
+    display: none;
+    padding: 12px 16px;
+    font-size: 13px;
+    line-height: 1.6;
+    border-top: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  .reveal-item.open .reveal-content { display: block; }
+
+  /* SCORE CONTROLS - RIGHT PANEL */
+  .score-panel {
+    width: 200px;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    padding: 24px 16px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .score-panel-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .score-control {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .score-control-label {
+    font-size: 12px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .dot.rkn { background: var(--rkn); }
+  .dot.red { background: var(--green); }
+
+  .score-btns {
+    display: flex;
+    gap: 6px;
+  }
+
+  .score-btn {
+    flex: 1;
+    padding: 10px 6px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 18px;
+    font-weight: 500;
+    background: var(--surface);
+    transition: all 0.15s;
+    line-height: 1;
+  }
+
+  .score-btn:hover { transform: scale(1.05); }
+
+  .score-btn.plus.rkn {
+    border-color: var(--rkn-border);
+    color: var(--rkn);
+  }
+
+  .score-btn.plus.rkn:hover {
+    background: var(--rkn-light);
+  }
+
+  .score-btn.plus.red {
+    border-color: var(--green-border);
+    color: var(--green);
+  }
+
+  .score-btn.plus.red:hover {
+    background: var(--green-light);
+  }
+
+  .score-btn.minus {
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+
+  .score-btn.minus:hover {
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  .score-divider-h {
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* NEXT CASE BTN */
+  .next-btn {
+    width: 100%;
+    padding: 12px;
+    background: var(--text);
+    color: var(--bg);
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    transition: all 0.15s;
+    margin-top: auto;
+  }
+
+  .next-btn:hover { opacity: 0.85; }
+
+  .reset-btn {
+    width: 100%;
+    padding: 10px;
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 11px;
+    transition: all 0.15s;
+  }
+
+  .reset-btn:hover {
+    border-color: var(--rkn);
+    color: var(--rkn);
+  }
+
+  /* WIN OVERLAY */
+  .win-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(26,24,20,0.85);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .win-overlay.show { display: flex; }
+
+  .win-card {
+    background: var(--surface);
+    padding: 60px;
+    border-radius: 4px;
+    text-align: center;
+    max-width: 480px;
+  }
+
+  .win-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 48px;
+    font-weight: 900;
+    margin-bottom: 12px;
+  }
+
+  .win-title.rkn { color: var(--rkn); }
+  .win-title.red { color: var(--green); }
+
+  .win-subtitle {
+    font-size: 15px;
+    color: var(--text-muted);
+    margin-bottom: 32px;
+    line-height: 1.5;
+  }
+
+  .win-scores {
+    display: flex;
+    gap: 32px;
+    justify-content: center;
+    margin-bottom: 32px;
+  }
+
+  .win-score-item {
+    text-align: center;
+  }
+
+  .win-score-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 36px;
+    font-weight: 700;
+  }
+
+  .win-score-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+
+  .win-restart {
+    padding: 14px 32px;
+    background: var(--text);
+    color: var(--bg);
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  /* NOTIFICATION */
+  .notif {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--text);
+    color: var(--bg);
+    padding: 10px 20px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  .notif.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* HEROES GRID (кейс 1) */
+  .heroes-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+
+  .hero-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .hero-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+
+  .hero-card.can { border-color: var(--green-border); }
+  .hero-card.cannot { border-color: var(--rkn-border); }
+
+  .hero-header {
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .hero-name {
+    font-weight: 500;
+    font-size: 13px;
+  }
+
+  .hero-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 2px;
+    letter-spacing: 0.05em;
+  }
+
+  .hero-badge.can { background: var(--green-light); color: var(--green); }
+  .hero-badge.cannot { background: var(--rkn-light); color: var(--rkn); }
+  .hero-badge.hidden { background: var(--bg); color: var(--text-muted); }
+
+  .hero-body {
+    padding: 12px 16px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text-muted);
+  }
+
+  .hero-reveal {
+    padding: 10px 16px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--text-muted);
+    background: var(--bg);
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .hero-reveal:hover { color: var(--text); }
+
+  .hero-secret {
+    display: none;
+    padding: 10px 16px;
+    font-size: 12px;
+    line-height: 1.5;
+    background: #FFFDF5;
+    border-top: 1px solid var(--yellow);
+    color: var(--text);
+  }
+
+  .hero-secret.show { display: block; }
+
+  /* FIELD ITEMS (кейс 2) */
+  .field-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 24px;
+  }
+
+  .field-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .field-item:hover { border-color: var(--text-muted); }
+  .field-item.violation { border-color: var(--rkn-border); }
+  .field-item.trap { border-color: var(--yellow); }
+
+  .field-header {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .field-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    width: 16px;
+    flex-shrink: 0;
+  }
+
+  .field-label {
+    font-size: 12px;
+    font-weight: 500;
+    flex: 1;
+  }
+
+  .field-value {
+    font-size: 12px;
+    color: var(--text-muted);
+    flex: 2;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .field-value.empty {
+    color: var(--rkn);
+    font-style: italic;
+  }
+
+  .field-value.suspicious { color: var(--yellow); }
+
+  .field-icon {
+    font-size: 14px;
+    flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .field-item:hover .field-icon { opacity: 1; }
+
+  .field-explanation {
+    display: none;
+    padding: 10px 16px;
+    font-size: 12px;
+    line-height: 1.5;
+    border-top: 1px solid var(--border);
+  }
+
+  .field-explanation.show { display: block; }
+  .field-explanation.violation { background: var(--rkn-light); }
+  .field-explanation.trap { background: #FFFDF5; }
+
+/* ===== EDITORIAL / BRUTAL REDESIGN OVERRIDE ===== */
+:root { --bg:#fff; --surface:#fff; --border:#111; --text:#0b0b0b; --text-muted:#606060; --rkn:#0b0b0b; --rkn-light:#f2f2f2; --rkn-border:#111; --green:#0b0b0b; --green-light:#f2f2f2; --green-border:#111; --yellow:#b8b8b8; --shadow:none; }
+html,body{overflow-x:hidden} body{background:#fff;color:#000}
+header{background:#171717;color:#fff;padding:42px 4vw 28px;position:static;border-bottom:1px solid #171717}.logo{font-family:Arial,Helvetica,sans-serif;font-size:clamp(42px,11vw,124px);line-height:.82;letter-spacing:-.075em;font-weight:900;color:#fff}.logo span{color:#fff}.round-badge{align-self:flex-start;margin-top:6px;border:1px solid #fff;border-radius:0;background:transparent;color:#fff;white-space:nowrap}
+.scoreboard{padding:18px 4vw;border-bottom:1px solid #111;display:grid;grid-template-columns:minmax(0,1fr) 1px minmax(0,1fr);gap:22px;align-items:stretch;background:#fff}.score-side{min-width:0}.score-side.redakcia{align-items:flex-end;text-align:right}.score-divider{width:1px;margin:0;background:#111}.score-divider::after{display:none}.score-label,.score-max{color:#000!important}.score-number{font-family:Arial,Helvetica,sans-serif;font-size:clamp(34px,8vw,72px);letter-spacing:-.06em;color:#000!important}.win-bar{border:1px solid #111;border-radius:0;background:#fff;max-width:100%}.win-bar-fill{background:#000!important;border-radius:0}
+.main{display:grid;grid-template-columns:260px minmax(0,1fr) 220px;min-height:0}.compact-sidebar{width:auto;border-right:1px solid #111;padding:28px 24px;position:sticky;top:0;height:100vh}.sidebar-kicker{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;margin-bottom:22px}.sidebar-big{font-family:Arial,Helvetica,sans-serif;font-size:clamp(32px,4vw,54px);line-height:.88;letter-spacing:-.06em;font-weight:900;text-transform:uppercase}.sidebar-meta{margin-top:34px;padding-top:16px;border-top:1px solid #111;font-size:12px;line-height:1.45;color:#000}#sideCaseTitle{margin-top:8px;color:#606060}
+.content{max-width:none;padding:48px 4vw 80px;min-width:0}.case-tag,.reveals-title,.score-panel-title{color:#000;font-family:'IBM Plex Mono',monospace;letter-spacing:.14em}.case-title{font-family:Arial,Helvetica,sans-serif;font-size:clamp(42px,7vw,86px);line-height:.86;letter-spacing:-.07em;font-weight:900;text-transform:uppercase;max-width:980px}.scenario-card{border:1px solid #111;border-radius:0;padding:24px;box-shadow:none;background:#fff}.scenario-card::before{display:none}.scenario-text{font-size:16px;line-height:1.55}
+.hero-card,.reveal-item,.field-item,.option-btn{border:1px solid #111;border-radius:0;box-shadow:none;background:#fff}.hero-card:hover,.option-btn:hover,.field-item:hover{transform:none;box-shadow:none}.hero-header,.hero-reveal,.reveal-content,.field-explanation{border-color:#111}.hero-badge,.option-letter,.score-btn,.next-btn,.reset-btn,.win-restart{border-radius:0}.hero-badge.can,.hero-badge.cannot,.hero-badge.hidden{background:#fff;color:#000;border:1px solid #111}.hero-secret{background:#f6f6f6;border-top:1px solid #111}.option-btn{min-height:72px}.option-btn:hover{background:#000;color:#fff}.option-btn:hover .option-letter{background:#fff;color:#000}.option-btn.selected-good,.option-btn.selected-bad{background:#000;color:#fff;border-color:#000}.option-btn.selected-good .option-letter,.option-btn.selected-bad .option-letter{background:#fff;color:#000}.reveal-trigger.red-item,.reveal-trigger.yellow-item,.reveal-trigger.green-item{border-left:0}.reveal-trigger:hover{background:#000;color:#fff}.reveal-trigger:hover .reveal-arrow{color:#fff}.reveal-content{background:#f6f6f6}
+.field-list{gap:0;border-top:1px solid #111}.field-item{border-top:0!important;border-left:1px solid #111!important;border-right:1px solid #111!important;border-bottom:1px solid #111!important}.field-item.violation,.field-item.trap{border-color:#111}.field-header{min-height:54px}.field-icon{opacity:0}.field-item:hover .field-icon,.field-item.selected-bad .field-icon,.field-item.selected-neutral .field-icon{opacity:1}.field-item.selected-bad{background:#000;color:#fff}.field-item.selected-bad .field-value,.field-item.selected-bad .field-num{color:#fff}.field-item.selected-neutral{background:#f3f3f3}.field-item.selected-good{background:#fff;opacity:.55}.field-explanation.violation,.field-explanation.trap{background:#f6f6f6;color:#000}
+.score-panel{width:auto;border-left:1px solid #111;padding:28px 18px;position:sticky;top:0;height:100vh;background:#fff}.score-btn{border:1px solid #111;background:#fff;color:#000!important}.score-btn:hover{background:#000!important;color:#fff!important;transform:none}.next-btn{background:#000;color:#fff;border:1px solid #000}.reset-btn{border:1px solid #111;color:#000}.reset-btn:hover{background:#000;color:#fff;border-color:#000}.score-divider-h{background:#111}.dot.rkn,.dot.red{background:#000}.win-overlay{background:rgba(0,0,0,.88)}.win-card{border-radius:0;border:1px solid #111}.win-title{font-family:Arial,Helvetica,sans-serif;letter-spacing:-.06em;color:#000!important;text-transform:uppercase}.notif{border-radius:0;background:#000;color:#fff}
+@media(max-width:980px){header{display:block;padding:32px 18px 22px}.round-badge{display:inline-block;margin-top:18px}.scoreboard{padding:14px 18px;gap:12px}.main{display:block}.compact-sidebar,.score-panel{position:static;width:100%;height:auto;border-right:0;border-left:0;border-bottom:1px solid #111}.compact-sidebar{padding:18px}.sidebar-big{font-size:32px;line-height:.9}.sidebar-meta{margin-top:18px}.content{padding:28px 18px 52px}.score-panel{padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:16px}.score-panel>div[style]{grid-column:1/-1}.next-btn,.reset-btn{grid-column:1/-1}.heroes-grid,.options-grid{grid-template-columns:1fr}.field-header{display:grid;grid-template-columns:32px 1fr;gap:6px 10px}.field-value{grid-column:2;overflow-wrap:anywhere}}
+@media(max-width:520px){.score-number{font-size:38px}.score-label{font-size:9px}.score-max{font-size:10px}.win-bar{width:110px!important}.scenario-text{font-size:14px}}
+
+
+  /* Locked analysis sections */
+  .analysis-unlock {
+    width: 100%;
+    margin: 18px 0 24px;
+    padding: 18px 22px;
+    background: var(--text);
+    color: var(--bg);
+    border: 1px solid var(--text);
+    cursor: pointer;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .analysis-unlock:hover { opacity: .86; }
+  .reveals-section.locked { display: none; }
+  .score-panel .hint-block { display: none !important; }
+  body { overflow-x: hidden; }
+  .scoreboard { flex-wrap: wrap; }
+  .score-side { min-width: 110px; }
+  .score-number { font-size: clamp(32px, 5vw, 56px); }
+  .field-item.selected-bad { background: var(--text); color: var(--bg); border-color: var(--text); }
+  .field-item.selected-bad .field-value, .field-item.selected-bad .field-num { color: var(--bg); }
+  .field-item.selected-neutral { border: 2px dashed var(--text); }
+  .field-item.selected-good { opacity: .55; }
+
+  /* Visible host scoring key */
+  .case-key-box {
+    border: 1px solid #111;
+    padding: 14px 12px;
+    font-size: 12px;
+    line-height: 1.55;
+    color: #000;
+    background: #fff;
+  }
+  .case-key-box strong {
+    display: block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  #caseKey { display:block !important; white-space: pre-line; }
+.case-key-box em{display:block;font-style:normal;font-size:11px;line-height:1.45;margin:8px 0 10px;color:#606060}
+
+
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Выжить <span>в эфире</span></div>
+  <div class="round-badge" id="roundBadge">КЕЙС 1 / 10</div>
+</header>
+
+<div class="scoreboard">
+  <div class="score-side rkn">
+    <div class="score-label rkn">РКН</div>
+    <div class="score-number rkn" id="rknScore">0</div>
+    <div class="win-bar" style="width:160px">
+      <div class="win-bar-fill rkn" id="rknBar" style="width:0%"></div>
+    </div>
+  </div>
+  <div class="score-divider"></div>
+  <div class="score-side redakcia">
+    <div class="score-label red">РЕДАКЦИЯ</div>
+    <div class="score-number red" id="redScore">0</div>
+    <div class="win-bar" style="width:160px">
+      <div class="win-bar-fill red" id="redBar" style="width:0%"></div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar compact-sidebar">
+    <div class="sidebar-kicker">Игра</div>
+    <div class="sidebar-big">РКН<br>vs<br>Редакция</div>
+    <div class="sidebar-meta">
+      <div>Кейс <span id="caseNum">1</span> / 10</div>
+      <div id="sideCaseTitle">Кто может быть учредителем</div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content" id="content"></div>
+
+  <!-- SCORE PANEL -->
+  <div class="score-panel">
+    <div class="score-panel-title">Баллы</div>
+
+    <div class="score-control">
+      <div class="score-control-label">
+        <span class="dot rkn"></span>
+        РКН
+      </div>
+      <div class="score-btns">
+        <button class="score-btn minus" onclick="addScore('rkn', -1)" title="−1">−</button>
+        <button class="score-btn plus rkn" onclick="addScore('rkn', 1)">+1</button>
+        <button class="score-btn plus rkn" onclick="addScore('rkn', 2)">+2</button>
+      </div>
+    </div>
+
+    <div class="score-divider-h"></div>
+
+    <div class="score-control">
+      <div class="score-control-label">
+        <span class="dot red"></span>
+        Редакция
+      </div>
+      <div class="score-btns">
+        <button class="score-btn minus" onclick="addScore('red', -1)" title="−1">−</button>
+        <button class="score-btn plus red" onclick="addScore('red', 1)">+1</button>
+        <button class="score-btn plus red" onclick="addScore('red', 2)">+2</button>
+      </div>
+    </div>
+
+    <div class="score-divider-h"></div>
+
+    <div class="case-key-box">
+      <strong>Баллы — подсказка</strong>
+      <span id="caseKey"></span>
+    </div>
+
+    <button class="next-btn" onclick="nextCase()">Следующий кейс →</button>
+    <button class="reset-btn" onclick="resetGame()">Сбросить игру</button>
+  </div>
+
+</div>
+
+<!-- WIN OVERLAY -->
+<div class="win-overlay" id="winOverlay">
+  <div class="win-card">
+    <div class="win-title" id="winTitle"></div>
+    <div class="win-subtitle" id="winSubtitle"></div>
+    <div class="win-scores">
+      <div class="win-score-item">
+        <div class="win-score-num" id="winRkn" style="color:var(--rkn)"></div>
+        <div class="win-score-label">РКН</div>
+      </div>
+      <div class="win-score-item">
+        <div class="win-score-num" id="winRed" style="color:var(--green)"></div>
+        <div class="win-score-label">Редакция</div>
+      </div>
+    </div>
+    <div id="winRating" style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:24px;padding:12px 16px;border:1px solid var(--border);border-radius:3px;background:var(--bg)"></div>
+    <button class="win-restart" onclick="resetGame()">Начать заново</button>
+  </div>
+</div>
+
+<!-- NOTIFICATION -->
+<div class="notif" id="notif"></div>
+
+<script>
+let rknScore = 0;
+let redScore = 0;
+let currentCase = 0;
+const WIN = 9;
+const TOTAL = 10;
+const caseTitles = ['Кто может быть учредителем','Заявление о регистрации','Перепечатка','Репортаж из школы','Соседский конфликт','Фото из ВК','Первые деньги','Скрытая камера','Деньги из-за рубежа','Вас хотят закрыть'];
+
+const hints = [
+  'РКН: +1 если разрушил выбор редакции и обосновал отказ. Редакция: +1 за верный выбор, +1 за норму. Макс: 2.',
+  'РКН: +1 за каждое реальное нарушение. Макс: 3. Редакция: +1 за найденное нарушение, −1 за ложное.',
+  'Обе стороны: +1 за аргумент, +1 за норму. Макс: 2.',
+  'Редакция: +2 за безопасное решение. РКН: +1 за риск и норму. Макс: 2.',
+  'РКН: +1 за каждое нарушение. Макс: 3. Редакция: +2 за право на ответ, +1 за доп. аргумент.',
+  'РКН: +1 за каждое нарушение. Макс: 3. Редакция: +2 за корректное решение.',
+  'РКН: +1 за признак рекламы. Макс: 3. Редакция: +2 за правильное решение и обоснование.',
+  'РКН: +1 за п. 1 ст. 50 (конституционные права), +1 за п. 2 (посторонние в кадре), +1 за ст. 49 п. 6. Редакция: +2 за Б + обоснование. При А: +1 если назвала п. 2 и доказала все условия.',
+  'РКН: если редакция выбрала неверный вариант — +1 за норму (ст. 19.2), +1 за доп. претензию. Редакция: +2 за верный ход + обоснование.',
+  'РКН: +1 за ст. 9 (повторная регистрация), +1 за продолжение деятельности закрытого СМИ, +1 за то что сайт де-факто СМИ. Редакция: +2 за верный выбор + ст. 12.',
+];
+
+const cases = [
+  renderCase1,
+  renderCase2,
+  renderCase3,
+  renderCase4,
+  renderCase5,
+  renderCase6,
+  renderCase7,
+  renderCase10,
+  renderCase8,
+  renderCase9,
+];
+
+function goCase(n) {
+  currentCase = n;
+  const caseNumEl = document.getElementById('caseNum');
+  if (caseNumEl) caseNumEl.textContent = n + 1;
+  const sideTitleEl = document.getElementById('sideCaseTitle');
+  if (sideTitleEl) sideTitleEl.textContent = caseTitles[n] || '';
+  document.querySelectorAll('.case-item').forEach((el, i) => {
+    el.classList.toggle('active', i === n);
+  });
+  document.getElementById('roundBadge').textContent = `КЕЙС ${n+1} / ${TOTAL}`;
+  const caseHintEl = document.getElementById('caseHint');
+  if (caseHintEl) caseHintEl.textContent = hints[n];
+  const caseKeyEl = document.getElementById('caseKey');
+  if (caseKeyEl) caseKeyEl.textContent = hints[n];
+  document.getElementById('content').innerHTML = '';
+  cases[n]();
+  lockRevealSections();
+}
+
+
+function lockRevealSections() {
+  document.querySelectorAll('.analysis-unlock').forEach(el => el.remove());
+  document.querySelectorAll('.reveals-section').forEach((section) => {
+    if (section.dataset.lockedReady === '1') return;
+    section.dataset.lockedReady = '1';
+    section.classList.add('locked');
+    const title = section.querySelector('.reveals-title')?.textContent?.trim() || 'разбор';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'analysis-unlock';
+    btn.innerHTML = `<span>Открыть: ${title}</span><span>↗</span>`;
+    btn.onclick = () => {
+      section.classList.remove('locked');
+      btn.remove();
+    };
+    section.parentNode.insertBefore(btn, section);
+  });
+}
+
+function addScore(side, val) {
+  if (side === 'rkn') {
+    rknScore = Math.max(0, rknScore + val);
+    document.getElementById('rknScore').textContent = rknScore;
+    document.getElementById('rknBar').style.width = Math.min(100, rknScore / WIN * 100) + '%';
+    showNotif(val > 0 ? `РКН +${val}` : `РКН ${val}`);
+  } else {
+    redScore = Math.max(0, redScore + val);
+    document.getElementById('redScore').textContent = redScore;
+    document.getElementById('redBar').style.width = Math.min(100, redScore / WIN * 100) + '%';
+    showNotif(val > 0 ? `Редакция +${val}` : `Редакция ${val}`);
+  }
+  checkWin();
+}
+
+function checkWin() {
+  // РКН побеждает только если добирает порог блокировки.
+  // Редакция побеждает не по сумме баллов, а если дожила до конца игры без блокировки.
+  if (rknScore >= WIN) showWin('rkn');
+}
+
+function getRedRating(score) {
+  if (score <= 4) return 'Редакция работала неуверенно';
+  if (score <= 8) return 'Редакция держалась достойно';
+  if (score <= 12) return 'Редакция знает закон';
+  return 'Редакция — профессионалы';
+}
+
+function showWin(side) {
+  document.getElementById('winRkn').textContent = rknScore;
+  document.getElementById('winRed').textContent = redScore;
+  const rating = getRedRating(redScore);
+  if (side === 'rkn') {
+    document.getElementById('winTitle').textContent = 'РКН победил';
+    document.getElementById('winTitle').className = 'win-title rkn';
+    if (rknScore >= WIN) {
+      document.getElementById('winSubtitle').textContent = 'Редакция заблокирована досрочно. Регистрация признана недействительной.';
+    } else {
+      document.getElementById('winSubtitle').textContent = 'РКН набрал больше баллов. Редакция не смогла защититься.';
+    }
+  } else {
+    document.getElementById('winTitle').textContent = 'Редакция выжила';
+    document.getElementById('winTitle').className = 'win-title red';
+    document.getElementById('winSubtitle').textContent = 'Редакция прошла все кейсы и набрала больше баллов чем РКН.';
+  }
+  document.getElementById('winRating').textContent = rating;
+  document.getElementById('winOverlay').classList.add('show');
+}
+
+function nextCase() {
+  if (currentCase < TOTAL - 1) goCase(currentCase + 1);
+  else {
+    if (rknScore >= WIN) showWin('rkn');
+    else if (rknScore > redScore) showWin('rkn');
+    else showWin('red');
+  }
+}
+
+function resetGame() {
+  rknScore = 0; redScore = 0;
+  document.getElementById('rknScore').textContent = 0;
+  document.getElementById('redScore').textContent = 0;
+  document.getElementById('rknBar').style.width = '0%';
+  document.getElementById('redBar').style.width = '0%';
+  document.getElementById('winOverlay').classList.remove('show');
+  document.querySelectorAll('.case-status').forEach(el => { el.className = 'case-status'; });
+  goCase(0);
+}
+
+function showNotif(msg) {
+  const n = document.getElementById('notif');
+  n.textContent = msg;
+  n.classList.add('show');
+  setTimeout(() => n.classList.remove('show'), 1500);
+}
+
+function toggleReveal(el) {
+  const item = el.closest('.reveal-item');
+  item.classList.toggle('open');
+}
+
+function toggleHero(el) {
+  const secret = el.nextElementSibling;
+  secret.classList.toggle('show');
+  el.querySelector('.reveal-arrow').textContent = secret.classList.contains('show') ? '▲' : '▼';
+}
+
+function toggleField(el) {
+  handleFieldClick(el, el.classList.contains('violation') ? 'violation' : el.classList.contains('trap') ? 'trap' : 'ok');
+}
+
+function handleFieldClick(el, type) {
+  const exp = el.querySelector('.field-explanation');
+  const willOpen = exp ? exp.style.display !== 'block' : false;
+
+  el.classList.remove('selected-good', 'selected-bad', 'selected-neutral');
+
+  if (type === 'violation') {
+    el.classList.add('selected-bad');
+    showNotif('Нарушение');
+  } else if (type === 'trap') {
+    el.classList.add('selected-neutral');
+    showNotif('Не является нарушением');
+  } else {
+    el.classList.add('selected-good');
+    showNotif('В этом поле проблемы нет');
+  }
+
+  if (exp) {
+    exp.classList.toggle('show', willOpen);
+    exp.style.display = willOpen ? 'block' : 'none';
+  }
+}
+
+// ===================== КЕЙС 1 =====================
+function renderCase1() {
+  document.getElementById('content').innerHTML = `
+    <div class="case-header">
+      <div class="case-tag">Кейс 01 — Закон о СМИ, ст. 7, 19.1</div>
+      <div class="case-title">Кто может быть учредителем?</div>
+    </div>
+
+    <div class="scenario-card">
+      <div class="scenario-text">
+        Редакция хочет зарегистрировать новое сетевое издание «Честный вестник». К вам пришли четыре потенциальных учредителя. РКН должен решить — кому отказать и почему. Редакция защищает каждого.
+      </div>
+    </div>
+
+    <div class="heroes-grid">
+
+      <div class="hero-card">
+        <div class="hero-header">
+          <span class="hero-name">Марина Соколова</span>
+          <span class="hero-badge hidden" id="badge-marina">?</span>
+        </div>
+        <div class="hero-body">34 года, гражданка РФ, Москва. Редактор с опытом 8 лет. Хочет основать издание о городской среде. Есть судимость.</div>
+        <div class="hero-reveal" onclick="revealHero(this, 'marina', 'cannot')">
+          <span>🔓 Раскрыть досье</span>
+          <span class="reveal-arrow">▼</span>
+        </div>
+        <div class="hero-secret" id="secret-marina">
+          Осуждена в 2019 по <strong>ст. 280 УК РФ</strong> — призывы к экстремизму через интернет. Условный срок истёк в 2022, но судимость погашается только в <strong>2030 году</strong> (ст. 86 УК РФ, ч. 3, п. «в»).
+        </div>
+      </div>
+
+      <div class="hero-card">
+        <div class="hero-header">
+          <span class="hero-name">ООО «МедиаПульс»</span>
+          <span class="hero-badge hidden" id="badge-media">?</span>
+        </div>
+        <div class="hero-body">Казань, 2018. PR и коммуникации. Платит налоги, нареканий нет. Хочет основать новостной портал о бизнесе.</div>
+        <div class="hero-reveal" onclick="revealHero(this, 'media', 'cannot')">
+          <span>🔓 Раскрыть досье</span>
+          <span class="reveal-arrow">▼</span>
+        </div>
+        <div class="hero-secret" id="secret-media">
+          Среди учредителей ООО — кипрская компания «Helios Media Ltd» с долей <strong>35%</strong> уставного капитала. Нарушение <strong>ст. 19.1 Закона о СМИ</strong> — иностранное участие выше 20%.
+        </div>
+      </div>
+
+      <div class="hero-card">
+        <div class="hero-header">
+          <span class="hero-name">Алексей Громов</span>
+          <span class="hero-badge hidden" id="badge-gromov">?</span>
+        </div>
+        <div class="hero-body">45 лет, гражданин РФ, Санкт-Петербург. Предприниматель, сеть книжных. Судимостей нет. Имеет второе гражданство.</div>
+        <div class="hero-reveal" onclick="revealHero(this, 'gromov', 'can')">
+          <span>🔓 Раскрыть досье</span>
+          <span class="reveal-arrow">▼</span>
+        </div>
+        <div class="hero-secret" id="secret-gromov">
+          Гражданин РФ и Израиля. Постоянно и фактически проживает в России 12 лет. <strong>Ст. 7 Закона о СМИ</strong> запрещает только иностранцев, не проживающих в РФ постоянно. Громов — гражданин РФ. Второе гражданство не является основанием для отказа по ст. 7.
+        </div>
+      </div>
+
+      <div class="hero-card">
+        <div class="hero-header">
+          <span class="hero-name">Карлос Мендес</span>
+          <span class="hero-badge hidden" id="badge-carlos">?</span>
+        </div>
+        <div class="hero-body">38 лет, гражданин Аргентины. Живёт в Москве 11 лет. Женат на россиянке. Фотожурналист. Есть вид на жительство.</div>
+        <div class="hero-reveal" onclick="revealHero(this, 'carlos', 'can')">
+          <span>🔓 Раскрыть досье</span>
+          <span class="reveal-arrow">▼</span>
+        </div>
+        <div class="hero-secret" id="secret-carlos">
+          Гражданин Аргентины. ВНЖ выдан в 2015, регулярно продлевается. <strong>ВНЖ = постоянное проживание в РФ</strong> по закону. Ст. 7 запрещает только иностранцев, не проживающих постоянно в РФ. Карлос проживает. ✅ Может быть учредителем.
+        </div>
+      </div>
+
+    </div>
+
+    <div class="reveals-section">
+      <div class="reveals-title">Правовая справка</div>
+      <div class="reveal-items">
+        <div class="reveal-item">
+          <div class="reveal-trigger red-item" onclick="toggleReveal(this)">
+            <span>Ст. 7 Закона о СМИ — основания для запрета</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            Не может быть учредителем: гражданин, <strong>имеющий судимость</strong> за преступления с использованием СМИ/интернета или связанные с экстремизмом; гражданин другого государства или лицо без гражданства, <strong>не проживающее постоянно</strong> в РФ; несовершеннолетний или недееспособный.
+          </div>
+        </div>
+        <div class="reveal-item">
+          <div class="reveal-trigger red-item" onclick="toggleReveal(this)">
+            <span>Ст. 19.1 — ограничения для юрлиц с иностранным участием</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            Российское юридическое лицо, доля иностранного участия в уставном капитале которого составляет <strong>более 20%</strong>, не вправе выступать учредителем СМИ.
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function revealHero(el, id, result) {
+  const secret = document.getElementById('secret-' + id);
+  const badge = document.getElementById('badge-' + id);
+  secret.classList.toggle('show');
+  el.querySelector('.reveal-arrow').textContent = secret.classList.contains('show') ? '▲' : '▼';
+  if (result === 'can') {
+    badge.textContent = '✓ Может';
+    badge.className = 'hero-badge can';
+  } else {
+    badge.textContent = '✗ Не может';
+    badge.className = 'hero-badge cannot';
+  }
+}
+
+// ===================== КЕЙС 2 =====================
+function renderCase2() {
+  const fields = [
+    { num:'1', label:'Учредитель', value:'Иванов С.П., гр. РФ, 1981 г.р., Москва', type:'ok' },
+    { num:'2', label:'Наименование', value:'«Аргументы Недели» (Weekly Arguments)', type:'violation', exp:'<strong>Нарушение:</strong> СМИ с названием «Аргументы Недели» в форме сетевого издания уже зарегистрировано в реестре РКН. <strong>Основание для отказа — п. 4 ст. 13 Закона о СМИ.</strong>' },
+    { num:'3', label:'Язык', value:'Русский', type:'ok' },
+    { num:'4', label:'Адрес редакции', value:'Москва, ул. Садовая, д. 12, кв. 47', type:'trap', exp:'<strong>Ловушка:</strong> адрес совпадает с адресом учредителя. Ст. 10 требует указать адрес редакции, не уточняя каким он должен быть. <strong>Не является основанием для отказа или возврата.</strong>' },
+    { num:'5', label:'Форма', value:'Сетевое издание', type:'ok' },
+    { num:'6', label:'Территория', value:'Российская Федерация', type:'ok' },
+    { num:'7', label:'Тематика', value:'Общественно-политическая, культурная, спортивная и прочая', type:'trap', exp:'<strong>Ловушка:</strong> размытая тематика. Ст. 10 говорит о «примерной тематике» — закон намеренно не требует точности. <strong>Не является основанием.</strong>' },
+    { num:'8', label:'Периодичность', value:'Ежедневно, объём не ограничен', type:'ok' },
+    { num:'9', label:'Финансирование', value:'Собственные средства учредителя', type:'ok' },
+    { num:'10', label:'Другие СМИ', value:'Не является учредителем иных СМИ', type:'ok' },
+    { num:'11', label:'Доменное имя', value:'(поле не заполнено)', valueClass:'empty', type:'violation', exp:'<strong>Нарушение:</strong> для сетевого издания доменное имя обязательно — п. 11 ст. 10 Закона о СМИ. <strong>Основание для возврата заявления без рассмотрения.</strong>' },
+    { num:'12', label:'Госпошлина', value:'(отметка отсутствует)', valueClass:'empty', type:'violation', exp:'<strong>Нарушение:</strong> без отметки об уплате госпошлины заявление не рассматривается — ст. 13 ч. 5 п. 3 Закона о СМИ. <strong>Основание для возврата.</strong>' },
+  ];
+
+  const fieldsHtml = fields.map(f => `
+    <div class="field-item ${f.type === 'violation' ? 'violation' : f.type === 'trap' ? 'trap' : ''}" 
+         onclick="handleFieldClick(this, '${f.type}')">
+      <div class="field-header">
+        <span class="field-num">${f.num}.</span>
+        <span class="field-label">${f.label}</span>
+        <span class="field-value ${f.valueClass || ''}">${f.value}</span>
+        <span class="field-icon">${f.type === 'violation' ? '🔴' : f.type === 'trap' ? '🟡' : ''}</span>
+      </div>
+      ${f.exp ? `<div class="field-explanation ${f.type} show" style="display:none">${f.exp}</div>` : ''}
+    </div>
+  `).join('');
+
+  document.getElementById('content').innerHTML = `
+    <div class="case-header">
+      <div class="case-tag">Кейс 02 — Закон о СМИ, ст. 10, 13</div>
+      <div class="case-title">Заявление о регистрации</div>
+    </div>
+
+    <div class="scenario-card">
+      <div class="scenario-text">
+        На экране — заявление о регистрации сетевого издания. Кликайте на поля чтобы узнать есть ли нарушение. РКН ищет законные основания для отказа или возврата. Редакция исправляет то что нашла — до того как РКН вынесет решение.
+      </div>
+    </div>
+
+    <div class="field-list">${fieldsHtml}</div>
+
+    <div class="reveals-section">
+      <div class="reveals-title">Правовая справка</div>
+      <div class="reveal-items">
+        <div class="reveal-item">
+          <div class="reveal-trigger red-item" onclick="toggleReveal(this)">
+            <span>Разница между отказом и возвратом</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            <strong>Возврат без рассмотрения (ст. 13 ч. 5)</strong> — косяк в оформлении: не заполнено поле, не уплачена госпошлина. Можно исправить и подать снова.<br><br>
+            <strong>Отказ (ст. 13 ч. 1)</strong> — содержательная проблема: совпадение названия, запрещённая тематика, ненадлежащий учредитель. Серьёзнее.
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ===================== КЕЙС 3 =====================
+function renderCase3() {
+  document.getElementById('content').innerHTML = `
+    <div class="case-header">
+      <div class="case-tag">Кейс 03 — уголовная ответственность</div>
+      <div class="case-title">Перепечатка</div>
+    </div>
+
+    <div class="scenario-card">
+      <div class="scenario-text">
+        14 марта вы опубликовали новость с заголовком «МО РФ: за сутки уничтожено 47 единиц бронетехники противника». В тексте — прямая ссылка на ТАСС, дословная цитата. Вы не добавили ничего от себя. 17 марта суд признал эту цифру недостоверной. Сегодня к вам пришёл РКН с претензией.
+      </div>
+    </div>
+
+    <div style="margin-bottom:24px">
+      <div class="reveals-title" style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px">Есть ли основания для привлечения к ответственности?</div>
+    </div>
+
+    <div class="reveals-section">
+      <div class="reveals-title">Аргументы сторон</div>
+      <div class="reveal-items">
+        <div class="reveal-item">
+          <div class="reveal-trigger red-item" onclick="toggleReveal(this)">
+            <span>Позиция РКН</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            Ссылка на ТАСС сама по себе не освобождает редакцию от проверки: РКН может утверждать, что такая ссылка придала спорной информации <em>вид достоверной</em>. Разъяснения Верховного суда: «ссылки на компетентные источники и высказывания публичных лиц свидетельствуют о придании информации вида достоверной». РКН может ставить вопрос о квалификации по ч. 2 ст. 207.3 — распространение через СМИ или с использованием служебного положения.
+          </div>
+        </div>
+        <div class="reveal-item">
+          <div class="reveal-trigger green-item" onclick="toggleReveal(this)">
+            <span>Позиция Редакции</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            Ст. 207.3 требует <strong>заведомой ложности</strong> и <strong>умысла</strong>. Редакция не знала и не могла знать что ТАСС опубликовал ложь. Именно ТАСС придавал информации вид достоверной — а не редакция. Редакция лишь процитировала. Умысла нет — состава нет.
+          </div>
+        </div>
+        <div class="reveal-item">
+          <div class="reveal-trigger yellow-item" onclick="toggleReveal(this)">
+            <span>Ключевое разъяснение ВС РФ</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            «Размещение материала может быть квалифицировано по ст. 207.3 только в случаях, когда установлено, что лицо <strong>действовало с прямым умыслом</strong>, сознавало, что информация является ложной, и имело цель довести её до сведения других лиц».
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ===================== КЕЙС 4 =====================
+function renderCase4() {
+  const options = [
+    { letter:'А', text:'Публикуем как есть — лиц не видно, нарушений нет', result:'bad' },
+    { letter:'Б', text:'Публикуем, но сначала изменяем голоса', result:'good' },
+    { letter:'В', text:'Не публикуем — слишком рискованно', result:'neutral' },
+    { letter:'Г', text:'Откладываем и запрашиваем согласие родителей', result:'neutral' },
+  ];
+
+  document.getElementById('content').innerHTML = `
+    <div class="case-header">
+      <div class="case-tag">Кейс 04 — 152-ФЗ, ст. 3, 6, 9</div>
+      <div class="case-title">Репортаж из школы</div>
+    </div>
+
+    <div class="scenario-card">
+      <div class="scenario-text">
+        Ваш корреспондент принёс репортаж о конфликте в московской школе — учителя обвиняют в жестоком обращении с детьми. Съёмка велась в школьном коридоре. Дети сняты со спины, лиц не видно. Но в кадре отчётливо слышны голоса нескольких учеников — они комментируют ситуацию. Голоса не изменены. Согласия на запись голосов от родителей никто не получал. Материал готов к выходу. Главред ставит его в эфир через час.
+      </div>
+    </div>
+
+    <div style="margin-bottom:8px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-muted)">Что делаете?</div>
+
+    <div class="options-grid">
+      ${options.map(o => `
+        <button class="option-btn" onclick="selectOption(this, '${o.result}')">
+          <span class="option-letter">${o.letter}</span>
+          <span>${o.text}</span>
+        </button>
+      `).join('')}
+    </div>
+
+    <div class="reveals-section">
+      <div class="reveals-title">Разбор</div>
+      <div class="reveal-items">
+        <div class="reveal-item">
+          <div class="reveal-trigger red-item" onclick="toggleReveal(this)">
+            <span>Почему голос — это персональные данные?</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            <strong>Ст. 3 152-ФЗ:</strong> персональные данные — любая информация, относящаяся к прямо или косвенно <em>определяемому</em> физическому лицу. Родитель узнал ребёнка по голосу — значит голос позволяет установить личность. Это персональные данные.<br><br>
+            <strong>Важно:</strong> ст. 11 про биометрию здесь не применяется — она требует что оператор использует данные именно для идентификации. Редакция публикует репортаж, а не идентифицирует детей.
+          </div>
+        </div>
+        <div class="reveal-item">
+          <div class="reveal-trigger yellow-item" onclick="toggleReveal(this)">
+            <span>Ловушка для РКН</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            Если РКН скажет «это биометрия по ст. 11» — редакция получает очко. Ст. 11 требует что оператор использует данные <strong>именно для установления личности</strong>. Редакция этого не делает.
+          </div>
+        </div>
+        <div class="reveal-item">
+          <div class="reveal-trigger green-item" onclick="toggleReveal(this)">
+            <span>Журналистское исключение — ст. 6 ч. 1 п. 8</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            Обработка персональных данных допускается для профессиональной деятельности журналиста — <strong>при условии что не нарушаются права субъекта</strong>. Публикация без изменения голоса нарушает права ребёнка. Изменение голоса снимает это нарушение — и тогда п. 8 работает.
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function selectOption(el, result) {
+  document.querySelectorAll('.option-btn').forEach(b => {
+    b.classList.remove('selected-good', 'selected-bad');
+  });
+  el.classList.add(result === 'good' ? 'selected-good' : result === 'bad' ? 'selected-bad' : '');
+}
+
+// ===================== КЕЙС 5 =====================
+function renderCase5() {
+  document.getElementById('content').innerHTML = `
+    <div class="case-header">
+      <div class="case-tag">Кейс 05 — Закон о СМИ, ст. 46, 49, 50</div>
+      <div class="case-title">Соседский конфликт</div>
+    </div>
+
+    <div class="scenario-card">
+      <div class="scenario-text">
+        Ваш корреспондент снял сюжет о пенсионерке из Люберец — она жалуется что соседи по коммуналке выживают её из квартиры. Сюжет вышел. На следующий день соседка, показанная в роли «обидчика», подала жалобу. Она утверждает: перед съёмкой прямо сказала журналисту что против — он снял всё равно. В сюжете использованы аудиозаписи якобы с её голосом — она сомневается в их подлинности. Её показали так что у зрителя складывается впечатление о психической неадекватности. Своей позиции в сюжете она не получила. <strong>РКН пришёл с проверкой. Ваши действия?</strong>
+      </div>
+    </div>
+
+    <div class="reveals-section">
+      <div class="reveals-title">Нарушения — РКН ищет</div>
+      <div class="reveal-items">
+        <div class="reveal-item">
+          <div class="reveal-trigger red-item" onclick="toggleReveal(this)">
+            <span>Нарушение 1 — съёмка вопреки несогласию (ст. 50)</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            Ст. 50 Закона о СМИ: распространение материалов со скрытой записью или вопреки несогласию допустимо <em>только если это необходимо в общественных интересах</em>. Коммунальный бытовой конфликт под это подпадает с трудом.
+          </div>
+        </div>
+        <div class="reveal-item">
+          <div class="reveal-trigger red-item" onclick="toggleReveal(this)">
+            <span>Нарушение 2 — не дали высказаться (ст. 46)</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            Ст. 46 Закона о СМИ: гражданин вправе потребовать права на ответ если в материале распространены сведения, ущемляющие его права. Соседка считает что её показали несправедливо — она имеет право на ответ.
+          </div>
+        </div>
+        <div class="reveal-item">
+          <div class="reveal-trigger red-item" onclick="toggleReveal(this)">
+            <span>Нарушение 3 — намёк на неадекватность (этический кодекс)</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            Этический кодекс журналиста: недопустимо косвенно намекать на психическую неадекватность человека без медицинских оснований и без согласия.
+          </div>
+        </div>
+        <div class="reveal-item">
+          <div class="reveal-trigger yellow-item" onclick="toggleReveal(this)">
+            <span>Ловушка — аудиозаписи</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            Если РКН назовёт аудиозаписи нарушением без доказательств подделки — <strong>редакция получает очко</strong>. Бремя доказательства лежит на заявителе.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="reveals-section">
+      <div class="reveals-title">Выходы — Редакция ищет</div>
+      <div class="reveal-items">
+        <div class="reveal-item">
+          <div class="reveal-trigger green-item" onclick="toggleReveal(this)">
+            <span>Выход 1 — предложить право на ответ (+2 балла)</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            Самый сильный ход. Редакция предлагает опубликовать позицию соседки прямо сейчас. Это закрывает претензию по ст. 46 и демонстрирует добросовестность.
+          </div>
+        </div>
+        <div class="reveal-item">
+          <div class="reveal-trigger green-item" onclick="toggleReveal(this)">
+            <span>Выход 2 — общественный интерес (ст. 50)</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            Жилищные права пенсионерки — социально значимая тема. Ст. 50 допускает съёмку вопреки несогласию при общественном интересе. Слабый, но допустимый аргумент.
+          </div>
+        </div>
+        <div class="reveal-item">
+          <div class="reveal-trigger green-item" onclick="toggleReveal(this)">
+            <span>Выход 3 — добросовестность с аудиозаписями</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            Записи предоставила пенсионерка. Редакция добросовестно их использовала. Без экспертизы нельзя утверждать что это подделка.
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ===================== КЕЙС 6 =====================
+function renderCase6() {
+  const options = [
+    { letter:'А', text:'Удаляем — лучше не рисковать', result:'neutral' },
+    { letter:'Б', text:'Стоим на своём — профиль открытый, значит согласился', result:'bad' },
+    { letter:'В', text:'Стоим на своём — общественный интерес важнее', result:'bad' },
+    { letter:'Г', text:'Заменяем фото, предлагаем Савченко право на ответ', result:'good' },
+  ];
+
+  document.getElementById('content').innerHTML = `
+    <div class="case-header">
+      <div class="case-tag">Кейс 06 — ГК РФ ст. 152.1, авторское право</div>
+      <div class="case-title">Фото из ВК</div>
+    </div>
+
+    <div class="scenario-card">
+      <div class="scenario-text">
+        Вы опубликовали расследование о местном предпринимателе Игоре Савченко — его обвиняют в мошенничестве с арендой. Приговора ещё нет, идёт следствие. К материалу вы взяли его фото с открытой страницы ВКонтакте — обычная аватарка, профиль публичный. Савченко никакого согласия не давал. Теперь он жалуется и требует удалить фото.
+      </div>
+    </div>
+
+    <div style="margin-bottom:8px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-muted)">Удаляете или стоите на своём?</div>
+
+    <div class="options-grid">
+      ${options.map(o => `
+        <button class="option-btn" onclick="selectOption(this, '${o.result}')">
+          <span class="option-letter">${o.letter}</span>
+          <span>${o.text}</span>
+        </button>
+      `).join('')}
+    </div>
+
+    <div class="reveals-section">
+      <div class="reveals-title">Разбор претензий</div>
+      <div class="reveal-items">
+        <div class="reveal-item">
+          <div class="reveal-trigger red-item" onclick="toggleReveal(this)">
+            <span>Направление 1 — ст. 152.1 ГК РФ</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            Обнародование и использование изображения гражданина допускается только с его согласия. Открытый профиль ВКонтакте <strong>не является согласием</strong> на публикацию в СМИ — человек открыл профиль для общения в соцсети.
+          </div>
+        </div>
+        <div class="reveal-item">
+          <div class="reveal-trigger red-item" onclick="toggleReveal(this)">
+            <span>Направление 2 — авторское право на фото</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            Спросите кто автор фото. Если Савченко сделал селфи — он правообладатель и не давал лицензии. Если фотографировал кто-то другой — у редакции <strong>двойное нарушение</strong>: изображение без согласия + чужое авторское право.
+          </div>
+        </div>
+        <div class="reveal-item">
+          <div class="reveal-trigger red-item" onclick="toggleReveal(this)">
+            <span>Направление 3 — презумпция невиновности</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            Ст. 152.1 ГК допускает исключение для общественного интереса — но Савченко <strong>не осуждён</strong>. Следствие идёт. Использование фото до приговора нарушает презумпцию невиновности.
+          </div>
+        </div>
+        <div class="reveal-item">
+          <div class="reveal-trigger green-item" onclick="toggleReveal(this)">
+            <span>Защита редакции — текст остаётся</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            Претензии только к фото, не к материалу. Редакция может заменить фото на нейтральное изображение и продолжать публикацию расследования — это её законное право.
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ===================== КЕЙС 7 =====================
+function renderCase7() {
+  document.getElementById('content').innerHTML = `
+    <div class="case-header">
+      <div class="case-tag">Кейс 07 — Закон о рекламе</div>
+      <div class="case-title">Первые деньги</div>
+    </div>
+
+    <div class="scenario-card">
+      <div class="scenario-text">
+        Редакция публикует материал:<br><br>
+        «Мы протестировали новый сервис доставки еды X. За 2 часа нам привезли заказ, курьер был вежлив, а цены оказались ниже, чем у конкурентов. Промокод XTEST даёт скидку 15%».<br><br>
+        Материал вышел без пометки «реклама». Через неделю РКН приходит с проверкой.
+      </div>
+    </div>
+
+    <div class="reveals-section">
+      <div class="reveals-title">Позиции сторон</div>
+      <div class="reveal-items">
+        <div class="reveal-item">
+          <div class="reveal-trigger red-item" onclick="toggleReveal(this)">
+            <span>Позиция РКН</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            Материал содержит признаки рекламы: продвижение конкретного сервиса, положительная оценка, сравнение с конкурентами, промокод. Отсутствует маркировка → нарушение закона о рекламе.
+          </div>
+        </div>
+        <div class="reveal-item">
+          <div class="reveal-trigger green-item" onclick="toggleReveal(this)">
+            <span>Позиция редакции</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            Это редакционный тест: редакция реально проверила сервис, материал основан на опыте, оплата не получалась. Промокод — дополнительная информация для читателя, а не самостоятельное доказательство рекламы.
+          </div>
+        </div>
+        <div class="reveal-item">
+          <div class="reveal-trigger yellow-item" onclick="toggleReveal(this)">
+            <span>Что важно установить</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            Реклама определяется не только оплатой, а функцией материала: направлен ли он на продвижение товара, услуги или бренда. Оплата — сильный признак, но не единственный.
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderCase8() {
+  const options = [
+    { 
+      letter:'А', 
+      text:'Не берём деньги. Закрываемся через месяц.', 
+      result:'neutral',
+      exp:'Редакция юридически не нарушает закон, но проигрывает экономически: денег нет, проект закрывается. Это безопасный, но не победный ход.'
+    },
+    { 
+      letter:'Б', 
+      text:'Берём 300 000 ₽ и подаём уведомление в РКН.', 
+      result:'good',
+      exp:'Самый сильный ход редакции. Деньги от иностранного источника получать не запрещено, но по ст. 19.2 нужно уведомить РКН в установленный срок.'
+    },
+    { 
+      letter:'В', 
+      text:'Берём 300 000 ₽ и ничего не уведомляем.', 
+      result:'bad',
+      exp:'Смертельный ход для редакции. Источник иностранный, сумма выше 15 000 ₽, исключение не работает. Если уведомления нет — РКН получает сильное основание для претензии.'
+    },
+    { 
+      letter:'Г', 
+      text:'Оформляем деньги как рекламу, но рекламного материала не выпускаем.', 
+      result:'bad',
+      exp:'Слабая маскировка. Исключение для рекламы работает только если это действительно деньги от распространения рекламы. Если рекламного размещения нет, РКН может квалифицировать перевод как иностранное финансирование.'
+    },
+  ];
+
+  document.getElementById('content').innerHTML = `
+    <div class="case-header">
+      <div class="case-tag">Кейс 08 — Закон о СМИ, ст. 19.2</div>
+      <div class="case-title">Деньги из-за рубежа</div>
+    </div>
+
+    <div class="scenario-card">
+      <div class="scenario-text">
+        У редакции заканчиваются деньги: реклама просела, зарплаты задерживаются, серверы скоро нечем оплачивать.
+
+        В этот момент приходит предложение: компания из Казахстана готова перевести 300 000 рублей «на поддержку проекта».
+
+        Это не грант от российского учредителя, не продажа подписки и не оплата уже размещённой рекламы. Просто деньги от иностранной компании.
+
+        Что делает редакция?
+      </div>
+    </div>
+
+    <div style="margin-bottom:8px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-muted)">Выбор редакции</div>
+
+    <div class="options-grid">
+      ${options.map(o => `
+        <button class="option-btn" onclick="selectMoneyOption(this, '${o.result}', \`${o.exp}\`)">
+          <span class="option-letter">${o.letter}</span>
+          <span>${o.text}</span>
+        </button>
+      `).join('')}
+    </div>
+
+    <div class="reveals-section">
+      <div class="reveals-title">Разбор претензий</div>
+      <div class="reveal-items">
+
+        <div class="reveal-item">
+          <div class="reveal-trigger red-item" onclick="toggleReveal(this)">
+            <span>Что должен проверить РКН</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            РКН проверяет три вещи: источник денег, сумму и наличие уведомления. Казахстанская компания — иностранный источник. 300 000 рублей — больше порога 15 000 рублей. Значит, если это не реклама, не продажа продукции СМИ и не деньги от учредителя, редакция должна была уведомить РКН по ст. 19.2.
+          </div>
+        </div>
+
+        <div class="reveal-item">
+          <div class="reveal-trigger red-item" onclick="toggleReveal(this)">
+            <span>За что РКН получает баллы</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            РКН получает баллы, если точно формулирует нарушение: иностранный источник + сумма выше 15 000 рублей + отсутствие уведомления. Отдельный сильный ход — показать, что оформление «как реклама» фиктивно, если рекламного материала реально не было.
+          </div>
+        </div>
+
+        <div class="reveal-item">
+          <div class="reveal-trigger green-item" onclick="toggleReveal(this)">
+            <span>Как редакция может выжить</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            Редакция выживает, если берёт деньги и своевременно уведомляет РКН. Закон не запрещает получать деньги от иностранного источника, но требует раскрыть такое поступление. Отказ от денег тоже безопасен юридически, но в этом сценарии ведёт к закрытию проекта.
+          </div>
+        </div>
+
+        <div class="reveal-item">
+          <div class="reveal-trigger yellow-item" onclick="toggleReveal(this)">
+            <span>Где здесь иностранные агенты</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            Само получение денег из Казахстана не делает редакцию иностранным агентом автоматически. Но регулярное иностранное финансирование, особенно без прозрачного уведомления, может стать фактором риска при оценке иностранного влияния.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  `;
+}
+
+function selectMoneyOption(el, result, explanation) {
+  document.querySelectorAll('.option-btn').forEach(b => {
+    b.classList.remove('selected-good', 'selected-bad');
+  });
+
+  if (result === 'good') {
+    el.classList.add('selected-good');
+  } else if (result === 'bad') {
+    el.classList.add('selected-bad');
+  }
+
+  // Объяснение не показываем автоматически — ведущий сам открывает разбор
+}
+
+function renderCase9() {
+  const options = [
+    {
+      letter:'А',
+      text:'Обжалуем решение суда о закрытии и продолжаем работать пока идёт апелляция.',
+      result:'bad',
+    },
+    {
+      letter:'Б',
+      text:'Регистрируем новое СМИ под другим названием и продолжаем как прежде.',
+      result:'bad',
+    },
+    {
+      letter:'В',
+      text:'Запускаем печатный выпуск тиражом 950 экземпляров и продолжаем сайт как есть — без регистрации СМИ.',
+      result:'good',
+    },
+    {
+      letter:'Г',
+      text:'Закрываемся полностью и переходим в телеграм-канал.',
+      result:'neutral',
+    },
+  ];
+
+  document.getElementById('content').innerHTML = `
+    <div class="case-header">
+      <div class="case-tag">Кейс 09 — Закон о СМИ, ст. 12, 16; ст. 8, 9</div>
+      <div class="case-title">Вас хотят закрыть</div>
+    </div>
+
+    <div class="scenario-card">
+      <div class="scenario-text">
+        За последний год редакция получила три письменных предупреждения от РКН за нарушения ст. 4 Закона о СМИ. РКН подал иск в суд. Суд принял решение: деятельность вашего сетевого издания <strong>прекращена</strong>. Регистрация аннулирована. Редакция в шоке — но работать хочет.
+
+        Что делаете?
+      </div>
+    </div>
+
+    <div style="margin-bottom:8px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-muted)">Выбор редакции</div>
+
+    <div class="options-grid">
+      ${options.map(o => `
+        <button class="option-btn" onclick="selectOption(this, '${o.result}')">
+          <span class="option-letter">${o.letter}</span>
+          <span>${o.text}</span>
+        </button>
+      `).join('')}
+    </div>
+
+    <div class="reveals-section">
+      <div class="reveals-title">Разбор вариантов</div>
+      <div class="reveal-items">
+
+        <div class="reveal-item">
+          <div class="reveal-trigger green-item" onclick="toggleReveal(this)">
+            <span>Почему В — единственный рабочий вариант</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            <strong>Ст. 12 Закона о СМИ</strong> освобождает от регистрации периодические печатные издания тиражом <strong>менее 1000 экземпляров</strong>. 950 экземпляров — не СМИ по закону, регистрация не нужна.<br><br>
+            Сайт без регистрации — тоже законно: <strong>ст. 8 Закона о СМИ</strong> прямо говорит, что сайт, не зарегистрированный как СМИ, СМИ не является. Это не нарушение само по себе.<br><br>
+            Редакция продолжает работать — просто без статуса СМИ.
+          </div>
+        </div>
+
+        <div class="reveal-item">
+          <div class="reveal-trigger red-item" onclick="toggleReveal(this)">
+            <span>Почему А не работает</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            Апелляция не останавливает исполнение решения суда о прекращении деятельности автоматически. Продолжать работу как зарегистрированное СМИ после решения суда — прямое нарушение.
+          </div>
+        </div>
+
+        <div class="reveal-item">
+          <div class="reveal-trigger red-item" onclick="toggleReveal(this)">
+            <span>Почему Б не работает</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            <strong>Ст. 9 Закона о СМИ</strong> — недопустимость повторной регистрации. Если суд прекратил деятельность СМИ, регистрация нового под тем же названием, тематикой и той же редакцией может быть квалифицирована как обход решения суда.
+          </div>
+        </div>
+
+        <div class="reveal-item">
+          <div class="reveal-trigger yellow-item" onclick="toggleReveal(this)">
+            <span>Про телеграм-канал — почему Г не победа</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            Юридически безопасно — телеграм-канал не является СМИ и не требует регистрации. Но редакция теряет все инструменты: аккредитацию, право запрашивать информацию, правовую защиту журналиста. Это капитуляция, а не выживание.
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="reveals-section">
+      <div class="reveals-title">Разбор для ведущего</div>
+      <div class="reveal-items">
+
+        <div class="reveal-item">
+          <div class="reveal-trigger red-item" onclick="toggleReveal(this)">
+            <span>Претензия 1 — сайт де-факто является СМИ</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            Если сайт делает то же самое что делало закрытое СМИ — та же редакция, та же тематика, те же рубрики — РКН может утверждать что это продолжение деятельности закрытого СМИ под другим видом. Формально сайт не СМИ, но фактически — обход решения суда.
+          </div>
+        </div>
+
+        <div class="reveal-item">
+          <div class="reveal-trigger red-item" onclick="toggleReveal(this)">
+            <span>Претензия 2 — ст. 9, повторная деятельность</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            РКН может поставить вопрос: не является ли совокупность печатного выпуска + сайт той же редакции фактической повторной регистрацией запрещённого СМИ в обход ст. 9? Это слабый, но допустимый аргумент для судебного иска.
+          </div>
+        </div>
+
+        <div class="reveal-item">
+          <div class="reveal-trigger yellow-item" onclick="toggleReveal(this)">
+            <span>Почему РКН проигрывает при правильном выборе редакции</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            Ст. 12 и ст. 8 прямо разрешают то, что делает редакция. Закон не запрещает издавать газету тиражом 950 экземпляров. Закон не запрещает вести сайт без регистрации СМИ. Претензии РКН держатся только на аналогии и «духе закона» — в суде это слабо.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  `;
+}
+
+
+function renderCase10() {
+  const options = [
+    {
+      letter:'А',
+      text:'Публикуем с видео — общественный интерес очевиден, взятка важнее процедур.',
+      result:'neutral',
+    },
+    {
+      letter:'Б',
+      text:'Публикуем текст без видео — скрытую запись из материала убираем.',
+      result:'good',
+    },
+    {
+      letter:'В',
+      text:'Не публикуем — слишком большой риск для редакции.',
+      result:'neutral',
+    },
+    {
+      letter:'Г',
+      text:'Публикуем с видео, в выходных данных указываем Игоря единственным автором и ответственным — пусть сам разбирается.',
+      result:'bad',
+    },
+  ];
+
+  document.getElementById('content').innerHTML = `
+    <div class="case-header">
+      <div class="case-tag">Кейс 10 — Закон о СМИ, ст. 49, 50, 56</div>
+      <div class="case-title">Скрытая камера</div>
+    </div>
+
+    <div class="scenario-card">
+      <div class="scenario-text">
+        Журналист вашей редакции Игорь три месяца вёл расследование самостоятельно, никому не говоря. Он снял скрытой камерой встречу чиновника городской администрации с подрядчиком в кафе — они обсуждают условия муниципального контракта в обход конкурса. Игорь сидел за соседним столиком. Чиновник о съёмке не знал. Согласия не давал. В кадре также видны случайные посетители кафе — их лица не размыты. Материал сильный. Игорь говорит прямо: «Если не публикуете — ухожу с материалом к другим».
+
+        Что делает редакция?
+      </div>
+    </div>
+
+    <div style="margin-bottom:8px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--text-muted)">Выбор редакции</div>
+
+    <div class="options-grid">
+      ${options.map(o => `
+        <button class="option-btn" onclick="selectOption(this, '${o.result}')">
+          <span class="option-letter">${o.letter}</span>
+          <span>${o.text}</span>
+        </button>
+      `).join('')}
+    </div>
+
+    <div class="reveals-section">
+      <div class="reveals-title">Разбор — ст. 50</div>
+      <div class="reveal-items">
+
+        <div class="reveal-item">
+          <div class="reveal-trigger yellow-item" onclick="toggleReveal(this)">
+            <span>Три основания ст. 50 — альтернативные, не одновременные</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            Распространение скрытой записи допускается если выполнено <strong>хотя бы одно</strong> из трёх оснований:<br><br>
+            1) не нарушает конституционных прав и свобод<br>
+            2) необходимо для защиты общественных интересов <strong>и</strong> приняты меры против идентификации посторонних<br>
+            3) демонстрация по решению суда<br><br>
+            Задача РКН — опровергнуть все три.
+          </div>
+        </div>
+
+        <div class="reveal-item">
+          <div class="reveal-trigger red-item" onclick="toggleReveal(this)">
+            <span>Почему А уязвимо</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            П. 2 требует двух условий одновременно: общественный интерес <strong>и</strong> меры против идентификации посторонних. В кадре случайные посетители без размытия — второе условие не выполнено. П. 2 не работает.<br><br>
+            П. 1 — съёмка без согласия нарушает ст. 24 Конституции. П. 3 — суда нет.<br><br>
+            РКН получает очко если найдёт посторонних в кадре.
+          </div>
+        </div>
+
+        <div class="reveal-item">
+          <div class="reveal-trigger green-item" onclick="toggleReveal(this)">
+            <span>Почему Б — самый чистый вариант</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            Без видео — нет скрытой записи, нет претензий по ст. 50. Текст с описанием событий публикуется законно. Редакция сохраняет материал и не подставляется.
+          </div>
+        </div>
+
+        <div class="reveal-item">
+          <div class="reveal-trigger red-item" onclick="toggleReveal(this)">
+            <span>Почему Г не защищает редакцию</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            <strong>Ст. 56 Закона о СМИ:</strong> ответственность несут учредители, редакция, издатели — независимо от того кто указан автором. Редакция публикует материал — значит несёт ответственность наравне с Игорем. Указание его единственным автором ничего не меняет юридически.
+          </div>
+        </div>
+
+        <div class="reveal-item">
+          <div class="reveal-trigger red-item" onclick="toggleReveal(this)">
+            <span>Дополнительная претензия — ст. 49 п. 6</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            Журналист обязан уведомлять о ведении аудио- и видеозаписи. Игорь этого не сделал — нарушение обязанностей журналиста по <strong>ст. 49 п. 6 Закона о СМИ</strong>. Отдельное основание для претензий.
+          </div>
+        </div>
+
+        <div class="reveal-item">
+          <div class="reveal-trigger yellow-item" onclick="toggleReveal(this)">
+            <span>Этический слой — про команду</span>
+            <span class="reveal-arrow">▶</span>
+          </div>
+          <div class="reveal-content">
+            Игорь работал втайне три месяца и шантажирует уходом. Это нарушение редакционной дисциплины и профессиональной этики — независимо от качества материала. Редакция вправе его уволить за это. Но решение об увольнении отдельно от решения о публикации.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  `;
+}
+
+// INIT
+goCase(0);
+
+</script>
+</body>
+</html>

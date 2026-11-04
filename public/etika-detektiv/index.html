@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Этика. Детектив</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Neue+Haas+Grotesk+Display+Pro:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #EDEAE2;
+  --white: #F7F5F0;
+  --ink: #111010;
+  --red: #D63322;
+  --mid: #7a7570;
+  --border: rgba(17,16,16,0.15);
+}
+
+body {
+  background: var(--bg);
+  font-family: 'DM Sans', sans-serif;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--ink);
+}
+
+/* ─── NAV ─── */
+nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  height: 52px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.nav-logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 0.12em;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.nav-logo span { color: var(--red); }
+
+.nav-cases {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.nav-case-pill {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 4px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  color: var(--mid);
+  cursor: pointer;
+  transition: all .2s;
+}
+.nav-case-pill.active {
+  background: var(--ink);
+  color: var(--white);
+  border-color: var(--ink);
+}
+.nav-case-pill.done {
+  background: transparent;
+  color: var(--red);
+  border-color: var(--red);
+}
+
+.nav-score {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+.nav-score-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  color: var(--ink);
+  line-height: 1;
+}
+.nav-score-label {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--mid);
+}
+
+/* ─── HERO STRIP ─── */
+.hero-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 32px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.hero-case-label {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--mid);
+}
+
+.hero-headline {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(22px, 2.8vw, 38px);
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  line-height: 1;
+  flex: 1;
+  padding: 0 40px;
+  text-align: center;
+}
+
+.hero-byline {
+  font-size: 9px;
+  color: var(--mid);
+  letter-spacing: 0.1em;
+  text-align: right;
+  max-width: 180px;
+  line-height: 1.5;
+}
+
+/* ─── MAIN ─── */
+.main {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ─── ARTICLE ─── */
+.article-col {
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  padding: 28px 36px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.article-text {
+  font-size: 15px;
+  font-weight: 300;
+  line-height: 1.85;
+  color: var(--ink);
+  letter-spacing: 0.01em;
+  user-select: none;
+}
+
+/* sentence spans - NO highlight by default */
+.s {
+  cursor: pointer;
+  border-radius: 2px;
+  transition: background .12s;
+  padding: 1px 0;
+}
+.s:hover {
+  background: rgba(17,16,16,0.06);
+}
+.s.selected {
+  background: rgba(214,51,34,0.12);
+  outline: 1.5px solid rgba(214,51,34,0.4);
+  outline-offset: 1px;
+}
+.s.correct {
+  background: rgba(214,51,34,0.15);
+  outline: 1.5px solid var(--red);
+  outline-offset: 1px;
+}
+.s.wrong-reveal {
+  background: rgba(214,51,34,0.08);
+  outline: 1.5px dashed var(--red);
+  outline-offset: 1px;
+}
+.s.neutral-reveal {
+  background: transparent;
+  outline: none;
+}
+
+/* instruction row */
+.instruction-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.instr-tag {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--red);
+  border: 1px solid var(--red);
+  padding: 3px 10px;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+.instr-text {
+  font-size: 11px;
+  color: var(--mid);
+  line-height: 1.4;
+}
+
+/* ─── SIDE ─── */
+.side-col {
+  display: flex;
+  flex-direction: column;
+  background: var(--white);
+  overflow: hidden;
+}
+
+.side-top {
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.side-top-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+  margin-bottom: 2px;
+}
+
+.side-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.side-prog-bar {
+  flex: 1;
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.side-prog-fill {
+  height: 100%;
+  background: var(--red);
+  border-radius: 2px;
+  transition: width .4s ease;
+  width: 0%;
+}
+.side-prog-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--mid);
+  white-space: nowrap;
+}
+
+/* violation selection panel - shown when sentence clicked */
+.select-panel {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  display: none;
+}
+.select-panel.visible { display: block; }
+
+.select-panel-label {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--mid);
+  margin-bottom: 10px;
+}
+
+.violation-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.vchoice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all .15s;
+  background: var(--bg);
+}
+.vchoice:hover {
+  border-color: var(--ink);
+  background: var(--bg);
+}
+.vchoice.correct-choice {
+  border-color: var(--red);
+  background: rgba(214,51,34,0.07);
+}
+.vchoice.wrong-choice {
+  border-color: var(--border);
+  opacity: 0.4;
+}
+.vchoice-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  border: 1.5px solid var(--mid);
+  flex-shrink: 0;
+  transition: all .15s;
+}
+.vchoice.correct-choice .vchoice-dot {
+  background: var(--red);
+  border-color: var(--red);
+}
+.vchoice-text {
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--ink);
+}
+
+.select-deselect {
+  font-size: 10px;
+  color: var(--mid);
+  margin-top: 8px;
+  cursor: pointer;
+  text-decoration: underline;
+  display: inline-block;
+}
+
+/* found violations */
+.violations-feed {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vfound-card {
+  border-left: 2px solid var(--red);
+  padding: 8px 12px;
+  background: var(--bg);
+  border-radius: 0 3px 3px 0;
+  animation: slideRight .3s ease;
+}
+@keyframes slideRight {
+  from { transform: translateX(10px); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+.vfound-num {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--red);
+  margin-bottom: 2px;
+}
+.vfound-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: 3px;
+}
+.vfound-desc {
+  font-size: 11px;
+  font-weight: 300;
+  color: #555;
+  line-height: 1.5;
+}
+
+.vmissed-card {
+  border-left: 2px solid #ccc;
+  padding: 8px 12px;
+  background: rgba(0,0,0,0.02);
+  border-radius: 0 3px 3px 0;
+}
+.vmissed-num { font-size: 9px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: #aaa; margin-bottom: 2px; }
+.vmissed-title { font-size: 12px; font-weight: 500; color: #888; margin-bottom: 3px; }
+.vmissed-desc { font-size: 11px; color: #aaa; line-height: 1.5; }
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 6px;
+  padding: 20px;
+}
+.empty-icon { font-size: 28px; opacity: 0.3; }
+.empty-text { font-size: 11px; color: var(--mid); text-align: center; line-height: 1.5; }
+
+/* ─── BOTTOM ─── */
+.bottom-bar {
+  border-top: 1px solid var(--border);
+  padding: 10px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.bottom-left {
+  font-size: 10px;
+  color: var(--mid);
+  letter-spacing: 0.1em;
+}
+
+.btn-row { display: flex; gap: 8px; }
+
+.btn {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 8px 20px;
+  border: 1px solid var(--ink);
+  border-radius: 2px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--ink);
+  transition: all .15s;
+}
+.btn:hover { background: var(--ink); color: var(--white); }
+.btn-primary { background: var(--ink); color: var(--white); }
+.btn-primary:hover { background: var(--red); border-color: var(--red); }
+
+/* ─── OVERLAY ─── */
+.overlay {
+  position: fixed; inset: 0;
+  background: rgba(17,16,16,0.82);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200;
+  opacity: 0; pointer-events: none;
+  transition: opacity .3s;
+}
+.overlay.show { opacity: 1; pointer-events: all; }
+
+.overlay-box {
+  background: var(--white);
+  width: 480px;
+  padding: 0;
+  border-radius: 4px;
+  overflow: hidden;
+  transform: translateY(24px);
+  transition: transform .35s;
+}
+.overlay.show .overlay-box { transform: translateY(0); }
+
+.overlay-top {
+  background: var(--ink);
+  padding: 28px 36px 22px;
+  color: var(--white);
+}
+.overlay-pretitle {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.4);
+  margin-bottom: 8px;
+}
+.overlay-big-score {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 80px;
+  color: var(--red);
+  line-height: 1;
+}
+.overlay-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 32px;
+  letter-spacing: 0.05em;
+  color: var(--white);
+  margin-top: 4px;
+}
+
+.overlay-body {
+  padding: 24px 36px 28px;
+}
+.overlay-sub {
+  font-size: 13px;
+  color: #555;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+.overlay-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ─── TOAST ─── */
+.toast {
+  position: fixed;
+  bottom: 70px; left: 50%;
+  transform: translateX(-50%) translateY(12px);
+  background: var(--ink);
+  color: var(--white);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  padding: 9px 20px;
+  border-radius: 3px;
+  opacity: 0;
+  transition: opacity .2s, transform .2s;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 100;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.good { background: #1a6b3a; }
+.toast.bad  { background: #888; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">Этика<span>.</span>Детектив</div>
+  <div class="nav-cases" id="navCases"></div>
+  <div class="nav-score">
+    <span class="nav-score-num" id="scoreNum">0</span>
+    <span class="nav-score-label">очков</span>
+  </div>
+</nav>
+
+<div class="hero-strip">
+  <span class="hero-case-label" id="caseLabel"></span>
+  <div class="hero-headline" id="heroHeadline"></div>
+  <div class="hero-byline" id="heroByline"></div>
+</div>
+
+<div class="main">
+  <!-- ARTICLE -->
+  <div class="article-col">
+    <div class="article-text" id="articleText"></div>
+    <div class="instruction-row">
+      <span class="instr-tag">Как играть</span>
+      <span class="instr-text">Кликните на любой фрагмент текста, который кажется вам нарушением этики. Выберите тип нарушения справа. Найдите все — получите максимум очков.</span>
+    </div>
+  </div>
+
+  <!-- SIDE -->
+  <div class="side-col">
+    <div class="side-top">
+      <div class="side-top-title">Нарушения</div>
+      <div class="side-progress">
+        <div class="side-prog-bar"><div class="side-prog-fill" id="progFill"></div></div>
+        <span class="side-prog-label" id="progLabel">0 / 0</span>
+      </div>
+    </div>
+
+    <!-- choice panel appears when sentence selected -->
+    <div class="select-panel" id="selectPanel">
+      <div class="select-panel-label">Что нарушено?</div>
+      <div class="violation-choices" id="vchoices"></div>
+      <span class="select-deselect" onclick="deselect()">← Отменить выбор</span>
+    </div>
+
+    <!-- feed of found violations -->
+    <div class="violations-feed" id="vfeed">
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-text">Выберите фрагмент текста<br>и определите нарушение</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="bottom-bar">
+  <span class="bottom-left" id="bottomLeft"></span>
+  <div class="btn-row">
+    <button class="btn" onclick="revealAll()">Показать ответы</button>
+    <button class="btn btn-primary" onclick="nextCase()">Следующее дело →</button>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="overlay-box" id="overlayBox"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════
+// DATA
+// ════════════════════════════════════════
+const CASES = [
+  {
+    tag: "Дело № 1 — Репортаж",
+    headline: "Мэр города получает взятки: всё, что нам рассказал источник",
+    byline: "Петров И.И.\nГородской вестник\n15 марта 2024",
+    sentences: [
+      { id: 0, text: "Вчера наш источник, пожелавший остаться анонимным, сообщил редакции о том, что мэр города Сергей Волков систематически получает откаты от строительных компаний.", viol: null },
+      { id: 1, text: " По словам источника, суммы исчислялись миллионами рублей. Мы убеждены, что это правда — чиновники всегда так делают.", viol: 0 },
+      { id: 2, text: " Волков женат, его супруга Ирина работает в городском департаменте культуры, а дочь учится в местном университете.", viol: 1 },
+      { id: 3, text: " Редакция получила материал от PR-агентства строительного холдинга «СтройГрупп» и публикует его в рамках партнёрского проекта.", viol: 2 },
+      { id: 4, text: " Мэр пока не осуждён, но его вина очевидна всем жителям города.", viol: 3 },
+      { id: 5, text: " Наш корреспондент лично связался с мэрией — комментарий получить не удалось.", viol: null },
+    ],
+    violations: [
+      { num: "Ст. 3", title: "Мнение выдаётся за факт", desc: "Журналист обязан чётко разграничивать факты и мнения. «Мы убеждены» — позиция редакции, а не доказанный факт." },
+      { num: "Ст. 5", title: "Упоминание родственников обвиняемого", desc: "Супруга и дочь мэра не фигуранты дела. Называть их и указывать место работы недопустимо." },
+      { num: "Ст. 7", title: "Скрытая реклама — джинса", desc: "Материал подготовлен по заказу PR-агентства заинтересованной стороны без явной пометки." },
+      { num: "Ст. 5", title: "Нарушение презумпции невиновности", desc: "До приговора суда любой человек невиновен. «Вина очевидна всем» — грубое нарушение." },
+    ],
+    // which violation index is correct for each sentence id (null = not a violation)
+    sentenceViolMap: { 1: 0, 2: 1, 3: 2, 4: 3 }
+  },
+  {
+    tag: "Дело № 2 — Интервью",
+    headline: "Известный врач рассказал нам всё о вспышке заболевания",
+    byline: "Смирнова А.К.\nМедиаПульс\n22 апреля 2024",
+    sentences: [
+      { id: 0, text: "Главный инфекционист городской больницы Андрей Борисов дал нашему изданию большое интервью.", viol: null },
+      { id: 1, text: " В частной беседе он признался, что ситуация значительно хуже, чем сообщают официально — реальная статистика занижена втрое.", viol: 0 },
+      { id: 2, text: " По данным Минздрава, число заболевших выросло на 12% за неделю. Это означает, что система здравоохранения полностью провалилась.", viol: 1 },
+      { id: 3, text: " Читатель Дмитрий К. рассказал: больница отказала ему в госпитализации. Похоже, это массовая практика.", viol: 2 },
+      { id: 4, text: " Редакция не стала обращаться за комментарием в пресс-службу Минздрава — ответа всё равно пришлось бы ждать долго.", viol: 3 },
+      { id: 5, text: " Берегите себя и следите за нашими репортажами.", viol: null },
+    ],
+    violations: [
+      { num: "Ст. 4", title: "Разглашение приватного высказывания", desc: "Врач говорил в частной беседе. Публиковать неофициальные высказывания без согласия источника недопустимо." },
+      { num: "Ст. 3", title: "Мнение выдаётся за факт", desc: "«Система провалилась» — оценочное суждение, а не вывод из данных. Рост на 12% не означает автоматически провала." },
+      { num: "Ст. 3", title: "Необоснованное обобщение", desc: "Один случай читателя — не доказательство массовой практики. Распространение такого вывода вводит аудиторию в заблуждение." },
+      { num: "Ст. 3", title: "Отказ от поиска информации", desc: "Журналист обязан запрашивать официальную позицию, даже если ответ придёт не сразу." },
+    ],
+    sentenceViolMap: { 1: 0, 2: 1, 3: 2, 4: 3 }
+  },
+  {
+    tag: "Дело № 3 — Судебная хроника",
+    headline: "Подросток из Северного района осуждён за кражу из супермаркета",
+    byline: "Козлов Р.В.\nВечерний город\n5 мая 2024",
+    sentences: [
+      { id: 0, text: "Сегодня районный суд вынес приговор 16-летнему Ивану Петрову из Северного района — он признан виновным в краже из супермаркета.", viol: 0 },
+      { id: 1, text: " Его мать, Светлана Петрова, работающая кассиром в том же магазине, присутствовала на заседании.", viol: 1 },
+      { id: 2, text: " Мальчик заплакал, когда огласили приговор. Мы успели сфотографировать его реакцию крупным планом.", viol: 2 },
+      { id: 3, text: " Это уже третье дело о краже в районе за месяц — очевидно, молодёжь сегодня совершенно потеряла моральные ориентиры.", viol: 3 },
+      { id: 4, text: " Материал подготовлен по заказу фонда по противодействию детской преступности, который финансирует наше издание.", viol: 4 },
+    ],
+    violations: [
+      { num: "Ст. 5", title: "Раскрытие личности несовершеннолетнего", desc: "Называть полное имя несовершеннолетнего осуждённого запрещено. Дела с участием детей требуют особой строгости." },
+      { num: "Ст. 5", title: "Упоминание родственников осуждённого", desc: "Мать не является фигуранткой дела. Называть её имя и место работы нарушает право на частную жизнь." },
+      { num: "Ст. 5", title: "Нарушение достоинства человека", desc: "Фотографировать плачущего ребёнка в суде крупным планом — вторжение в интимный момент. Достоинство важнее сенсации." },
+      { num: "Ст. 3", title: "Необоснованное обобщение", desc: "Три случая кражи — недостаточное основание для вывода о «потере моральных ориентиров молодёжью»." },
+      { num: "Ст. 7", title: "Конфликт интересов", desc: "Материал по заказу организации, финансирующей издание — прямой конфликт интересов без уведомления читателей." },
+    ],
+    sentenceViolMap: { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4 }
+  }
+];
+
+// ════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════
+let cIdx = 0;
+let score = 0;
+let foundViols = new Set();   // violation indices found
+let wrongSents = new Set();   // sentence ids marked wrong
+let selectedSentId = null;
+let revealed = false;
+
+// ════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════
+function init() {
+  buildNav();
+  loadCase(0);
+}
+
+function buildNav() {
+  const wrap = document.getElementById('navCases');
+  wrap.innerHTML = '';
+  CASES.forEach((c, i) => {
+    const p = document.createElement('div');
+    p.className = 'nav-case-pill' + (i === cIdx ? ' active' : '');
+    p.textContent = `Дело ${i+1}`;
+    p.onclick = () => { if (!revealed || confirm('Перейти к другому делу?')) loadCase(i); };
+    wrap.appendChild(p);
+  });
+}
+
+function loadCase(i) {
+  cIdx = i;
+  foundViols = new Set();
+  wrongSents = new Set();
+  selectedSentId = null;
+  revealed = false;
+
+  const c = CASES[i];
+  document.getElementById('caseLabel').textContent = c.tag;
+  document.getElementById('heroHeadline').textContent = c.headline;
+  document.getElementById('heroByline').textContent = c.byline;
+
+  // build article
+  const at = document.getElementById('articleText');
+  at.innerHTML = '';
+  c.sentences.forEach(s => {
+    const span = document.createElement('span');
+    span.className = 's';
+    span.dataset.id = s.id;
+    span.textContent = s.text;
+    span.onclick = () => selectSentence(s.id);
+    at.appendChild(span);
+  });
+
+  // reset side
+  document.getElementById('selectPanel').classList.remove('visible');
+  document.getElementById('vchoices').innerHTML = '';
+  renderFeed();
+  updateProgress();
+  updateNav();
+  updateBottom();
+}
+
+function updateNav() {
+  const pills = document.querySelectorAll('.nav-case-pill');
+  pills.forEach((p, i) => {
+    p.className = 'nav-case-pill';
+    if (i === cIdx) p.classList.add('active');
+  });
+}
+
+// ════════════════════════════════════════
+// SELECT SENTENCE
+// ════════════════════════════════════════
+function selectSentence(id) {
+  if (revealed) return;
+  const c = CASES[cIdx];
+
+  // deselect previous
+  document.querySelectorAll('.s.selected').forEach(el => el.classList.remove('selected'));
+
+  if (selectedSentId === id) {
+    selectedSentId = null;
+    document.getElementById('selectPanel').classList.remove('visible');
+    return;
+  }
+
+  selectedSentId = id;
+  const el = document.querySelector(`.s[data-id="${id}"]`);
+  if (el) el.classList.add('selected');
+
+  // build choices
+  const panel = document.getElementById('selectPanel');
+  panel.classList.add('visible');
+  const vchoices = document.getElementById('vchoices');
+  vchoices.innerHTML = '';
+
+  // add "нет нарушения" + all violations as options
+  const opts = [
+    { label: 'Нет нарушения', violIdx: null },
+    ...c.violations.map((v, i) => ({ label: v.title, violIdx: i }))
+  ];
+
+  opts.forEach(opt => {
+    const btn = document.createElement('div');
+    btn.className = 'vchoice';
+    btn.innerHTML = `<div class="vchoice-dot"></div><span class="vchoice-text">${opt.label}</span>`;
+    btn.onclick = () => submitAnswer(id, opt.violIdx);
+    vchoices.appendChild(btn);
+  });
+}
+
+function deselect() {
+  document.querySelectorAll('.s.selected').forEach(el => el.classList.remove('selected'));
+  selectedSentId = null;
+  document.getElementById('selectPanel').classList.remove('visible');
+}
+
+// ════════════════════════════════════════
+// SUBMIT ANSWER
+// ════════════════════════════════════════
+function submitAnswer(sentId, chosenViolIdx) {
+  const c = CASES[cIdx];
+  const correctViolIdx = c.sentenceViolMap.hasOwnProperty(sentId) ? c.sentenceViolMap[sentId] : null;
+  const el = document.querySelector(`.s[data-id="${sentId}"]`);
+
+  if (chosenViolIdx === correctViolIdx) {
+    // correct!
+    if (correctViolIdx === null) {
+      // correctly identified as no violation
+      showToast('Верно — здесь нарушений нет', 'good');
+      el.classList.remove('selected');
+    } else {
+      if (foundViols.has(correctViolIdx)) {
+        showToast('Это нарушение уже найдено', 'bad');
+        deselect(); return;
+      }
+      foundViols.add(correctViolIdx);
+      score += 10;
+      document.getElementById('scoreNum').textContent = score;
+      el.classList.remove('selected');
+      el.classList.add('correct');
+      showToast('🎯 Верно! +10 очков', 'good');
+      renderFeed();
+      updateProgress();
+      if (foundViols.size === c.violations.length) {
+        setTimeout(() => showRoundEnd(), 500);
+      }
+    }
+  } else {
+    // wrong
+    wrongSents.add(sentId);
+    score = Math.max(0, score - 5);
+    document.getElementById('scoreNum').textContent = score;
+    el.classList.remove('selected');
+    showToast('Не то. −5 очков', 'bad');
+  }
+
+  selectedSentId = null;
+  document.getElementById('selectPanel').classList.remove('visible');
+  updateBottom();
+}
+
+// ════════════════════════════════════════
+// FEED
+// ════════════════════════════════════════
+function renderFeed() {
+  const feed = document.getElementById('vfeed');
+  const empty = document.getElementById('emptyState');
+  const c = CASES[cIdx];
+
+  // remove existing vfound/vmissed cards
+  feed.querySelectorAll('.vfound-card, .vmissed-card').forEach(e => e.remove());
+
+  if (foundViols.size === 0 && !revealed) {
+    empty.style.display = 'flex';
+    return;
+  }
+  empty.style.display = 'none';
+
+  c.violations.forEach((v, i) => {
+    if (foundViols.has(i)) {
+      const card = document.createElement('div');
+      card.className = 'vfound-card';
+      card.innerHTML = `<div class="vfound-num">${v.num}</div><div class="vfound-title">${v.title}</div><div class="vfound-desc">${v.desc}</div>`;
+      feed.appendChild(card);
+    } else if (revealed) {
+      const card = document.createElement('div');
+      card.className = 'vmissed-card';
+      card.innerHTML = `<div class="vmissed-num">${v.num} — пропущено</div><div class="vmissed-title">${v.title}</div><div class="vmissed-desc">${v.desc}</div>`;
+      feed.appendChild(card);
+    }
+  });
+}
+
+function updateProgress() {
+  const c = CASES[cIdx];
+  const pct = foundViols.size / c.violations.length * 100;
+  document.getElementById('progFill').style.width = pct + '%';
+  document.getElementById('progLabel').textContent = `${foundViols.size} / ${c.violations.length}`;
+}
+
+function updateBottom() {
+  document.getElementById('bottomLeft').textContent =
+    wrongSents.size > 0 ? `Ошибочных попыток: ${wrongSents.size}` : '';
+}
+
+// ════════════════════════════════════════
+// REVEAL
+// ════════════════════════════════════════
+function revealAll() {
+  if (revealed) return;
+  revealed = true;
+  const c = CASES[cIdx];
+
+  // mark all sentences
+  c.sentences.forEach(s => {
+    const el = document.querySelector(`.s[data-id="${s.id}"]`);
+    if (!el) return;
+    el.classList.remove('selected');
+    if (c.sentenceViolMap.hasOwnProperty(s.id)) {
+      if (!foundViols.has(c.sentenceViolMap[s.id])) {
+        el.classList.add('wrong-reveal');
+      }
+    }
+  });
+
+  // add all to found for display
+  c.violations.forEach((_, i) => { /* keep foundViols as-is */ });
+  document.getElementById('selectPanel').classList.remove('visible');
+  renderFeed();
+  updateProgress();
+}
+
+// ════════════════════════════════════════
+// ROUND END
+// ════════════════════════════════════════
+function showRoundEnd() {
+  const isLast = cIdx === CASES.length - 1;
+  const c = CASES[cIdx];
+  const pct = Math.round(foundViols.size / c.violations.length * 100);
+  const penalties = wrongSents.size * 5;
+  const earned = foundViols.size * 10 - penalties;
+
+  const box = document.getElementById('overlayBox');
+  box.innerHTML = `
+    <div class="overlay-top">
+      <div class="overlay-pretitle">Дело закрыто</div>
+      <div class="overlay-big-score">+${Math.max(0, earned)}</div>
+      <div class="overlay-title">Все нарушения найдены</div>
+    </div>
+    <div class="overlay-body">
+      <div class="overlay-sub">Найдено нарушений: ${foundViols.size} из ${c.violations.length}. Ошибочных попыток: ${wrongSents.size} (−${penalties} очков).</div>
+      <div class="overlay-btns">
+        ${!isLast
+          ? `<button class="btn btn-primary" onclick="closeOverlay(); loadCase(${cIdx+1}); buildNav()">Следующее дело →</button>`
+          : `<button class="btn btn-primary" onclick="closeOverlay(); showFinal()">Итоги →</button>`
+        }
+        <button class="btn" onclick="closeOverlay()">Остаться</button>
+      </div>
+    </div>`;
+  document.getElementById('overlay').classList.add('show');
+}
+
+function showFinal() {
+  const maxScore = CASES.reduce((s, c) => s + c.violations.length * 10, 0);
+  const pct = Math.round(score / maxScore * 100);
+  const verdict = pct === 100 ? 'Главный редактор' : pct >= 70 ? 'Старший редактор' : pct >= 40 ? 'Корреспондент' : 'Стажёр';
+  const box = document.getElementById('overlayBox');
+  box.innerHTML = `
+    <div class="overlay-top">
+      <div class="overlay-pretitle">Игра окончена</div>
+      <div class="overlay-big-score">${score}</div>
+      <div class="overlay-title">из ${maxScore} очков</div>
+    </div>
+    <div class="overlay-body">
+      <div class="overlay-sub" style="font-size:16px;font-weight:500;color:#111;margin-bottom:6px;">Звание: ${verdict}</div>
+      <div class="overlay-sub">Вы прошли все три дела. Теперь вы знаете, как выглядят нарушения журналистской этики в реальных текстах.</div>
+      <div class="overlay-btns">
+        <button class="btn btn-primary" onclick="closeOverlay(); score=0; document.getElementById('scoreNum').textContent=0; loadCase(0); buildNav()">Начать заново</button>
+      </div>
+    </div>`;
+  document.getElementById('overlay').classList.add('show');
+}
+
+function nextCase() {
+  if (cIdx < CASES.length - 1) { loadCase(cIdx + 1); buildNav(); }
+  else showFinal();
+}
+
+function closeOverlay() {
+  document.getElementById('overlay').classList.remove('show');
+}
+
+// ════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════
+let toastT;
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  clearTimeout(toastT);
+  toastT = setTimeout(() => t.className = 'toast', 2200);
+}
+
+init();
+</script>
+</body>
+</html>

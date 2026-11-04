@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Первый день в редакции тгк «Трэш и Угар»</title>
+  <style>
+    :root {
+      --bg: #111315;
+      --panel: #1b1f24;
+      --panel-2: #242a31;
+      --text: #f4f6f8;
+      --muted: #a8b0b8;
+      --accent: #ffd54f;
+      --good: #87e6a8;
+      --bad: #ff9b9b;
+      --link: #8ecbff;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(180deg, #0f1113 0%, #161a1f 100%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .game {
+      width: 100%;
+      max-width: 860px;
+      background: rgba(20, 23, 27, 0.92);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+    }
+
+    .header {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .eyebrow {
+      color: var(--accent);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-size: 12px;
+    }
+
+    h1 {
+      font-size: clamp(28px, 4vw, 42px);
+      margin: 0;
+      line-height: 1.05;
+    }
+
+    .lead {
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    .screen {
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 20px;
+      padding: 22px;
+      min-height: 420px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .bubble {
+      background: var(--panel-2);
+      border-radius: 16px;
+      padding: 16px;
+      line-height: 1.55;
+      font-size: 16px;
+    }
+
+    .question {
+      font-size: 24px;
+      font-weight: 800;
+      line-height: 1.2;
+      margin: 0;
+    }
+
+    .choices {
+      display: grid;
+      gap: 12px;
+    }
+
+    button.choice, .action {
+      width: 100%;
+      text-align: left;
+      background: #20262d;
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 16px 18px;
+      font-size: 16px;
+      line-height: 1.45;
+      cursor: pointer;
+      transition: transform .15s ease, border-color .15s ease, background .15s ease;
+    }
+
+    button.choice:hover, .action:hover {
+      transform: translateY(-1px);
+      border-color: rgba(255, 213, 79, 0.6);
+      background: #262d35;
+    }
+
+    .result {
+      border-radius: 16px;
+      padding: 16px;
+      line-height: 1.55;
+      font-size: 16px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .good { background: rgba(135, 230, 168, 0.12); color: var(--good); }
+    .bad { background: rgba(255, 155, 155, 0.12); color: var(--bad); }
+
+    .footer {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: auto;
+    }
+
+    .action {
+      width: auto;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 160px;
+    }
+
+    .note {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .summary-card {
+      background: #1f252c;
+      border-radius: 18px;
+      padding: 18px;
+      border: 1px solid rgba(255,255,255,0.08);
+      line-height: 1.6;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #2b323b;
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      margin-right: 8px;
+      margin-bottom: 8px;
+    }
+
+    @media (max-width: 640px) {
+      .game { padding: 16px; border-radius: 18px; }
+      .screen { padding: 16px; min-height: auto; }
+      .question { font-size: 21px; }
+      .bubble, button.choice { font-size: 15px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="game">
+    <div class="header">
+      <div class="eyebrow">учебная игра по репортажу</div>
+      <h1>Первый день в редакции «Трэш и Угар»</h1>
+    </div>
+
+    <section class="screen" id="screen"></section>
+  </main>
+
+  <script>
+    const intro = {
+      type: 'intro',
+      title: 'Добро пожаловать в редакцию',
+      text: 'Ты — стажёр в издании «Трэш и угар». Главред влетает в ньюсрум, ставит на стол энергетик без крышки и говорит: «Новости про Викторию Боню стали набирать плохие охваты. Да и вообще сколько можно делать одни новости про звезд, котов и расчлененку? Нужен репортаж. Не ной. Иди работать в поле».',
+      text2: 'Тебе предстоит выбрать тему, приехать на место, не задавать идиотских вопросов, заметить работающие детали и написать текст так, чтобы читатель оказался внутри события.'
+    };
+
+    const questions = [
+      {
+        id: 1,
+        scene: 'Редактор спецрепов',
+        question: 'Что из этого больше всего похоже именно на репортажную тему?',
+        options: [
+          {
+            text: 'Пожар в торговом центре: сгорел магазин лабубу, МФЦ, Ашан и книжный.',
+            correct: false,
+            feedback: 'ТЦ сразу оцепили, силовики никуда не пускают, потому что ненавидят журналистов. Не лучший вариант для репортажа. Событие острое, но доступ к сцене почти наверняка перекрыт, а без наблюдения ты быстро скатишься в обзор официальных комментариев и дайджест сплетен местных алкашей, которые даже не были внутри.'
+          },
+          {
+            text: 'Вчера произошло резонансное убийство высокопоставленного чиновника в центре Москвы: его застрелили из танка.',
+            correct: false,
+            feedback: 'Это слабый выбор. Ситуация уже не разворачивается у тебя на глазах. Ты можешь сделать расследование или комментарий, но не репортаж, потому что для него нужен эффект присутствия. Иначе придется просто описывать оцепление и собирать невнятные комментарии прохожих.'
+          },
+          {
+            text: 'Митинг за возвращение Моргенштерна на родину.',
+            correct: true,
+            feedback: 'Да. Это классическая ситуация в развитии: есть действие, люди, сцены, детали, через которые можно включить читателя в происходящее.'
+          }
+        ]
+      },
+      {
+        id: 2,
+        scene: 'У рамок металлодетектора',
+        question: 'Ты приехал на митинг. Что фиксируешь в первую очередь у себя в заметках смартфона?',
+        options: [
+          {
+            text: 'Общую мысль: “люди были очень разные, атмосфера была интересная”. Не нужно перегружать лишними описаниями, и так понятно, что событие неординарное',
+            correct: false,
+            feedback: 'Это не наблюдение, а пустая абстракция. Репортаж держится на конкретике: звуках, жестах, одежде, плакатах, репликах, запахах.'
+          },
+          {
+            text: 'Сенсорные и поведенческие детали: как скрипят турникеты, что написано на плакатах, как парень в меховой панаме спорит с полицейским, чем пахнет от фудтрака и как толпа реагирует на крики.',
+            correct: true,
+            feedback: 'Именно. Работают детали, которые раскрывают идею и погружают в сцену: звуки, лица, одежда, речь, жесты, поведение, напряжение пространства.'
+          },
+          {
+            text: 'Сразу записываю себе вывод: “общество расколото, молодёжь потеряна”. Детали можно добрать потом из головы. Пока главное проникнуться происходящим.',
+            correct: false,
+            feedback: 'Так не пойдёт. Выводы без наблюдения — путь к картонному тексту. Сначала сцены и фактура, потом уже смысл и внутренняя логика материала. И записывать обычно надо начинать сразу.'
+          }
+        ]
+      },
+      {
+        id: 3,
+        scene: 'Толпа начинает качаться волнами',
+        question: 'С кем будем говорить?',
+        options: [
+          {
+            text: 'Только с организаторами: они сейчас всё объяснят красиво.',
+            correct: false,
+            feedback: 'Организатор нужен, но если говорить только с ним, текст станет пресс-релизом.'
+          },
+          {
+            text: 'С разными людьми внутри события: участник, случайный прохожий, полицейский или волонтёр, продавец воды, человек с самым странным плакатом.',
+            correct: true,
+            feedback: 'Да. Репортаж состоит из голосов участников и очевидцев. Нужны разные перспективы внутри одной сцены, а не один официальный источник.'
+          },
+          {
+            text: 'Ни с кем. Главное — красиво описать свои ощущения.',
+            correct: false,
+            feedback: 'Слишком много “я” быстро душит репортаж. В центре должны быть событие, герои и ситуация, а не твоя тонкая душевная организация.'
+          }
+        ]
+      },
+      {
+        id: 4,
+        scene: 'Первый контакт со спикером',
+        question: 'Как корректно начать разговор?',
+        options: [
+          {
+            text: 'Не представляться и молча включить диктофон. Зато сможешь записать самый яркий комментарий.',
+            correct: false,
+            feedback: 'Плохая идея. Закон о СМИ для кого писали?'
+          },
+          {
+            text: 'Представиться журналистом, назвать издание и предупредить, что включён диктофон.',
+            correct: true,
+            feedback: 'Да. Так ты действуешь профессионально: обозначаешь, кто ты, и что разговор записывается.'
+          },
+          {
+            text: 'Представиться, но про диктофон ничего не говорить: вдруг человек испугается и закроется.',
+            correct: false,
+            feedback: 'Это уже серая зона и плохая привычка для работы.'
+          },
+          {
+            text: 'Сказать, что ты просто блогер и “чисто для себя спрашиваешь”, так люди охотнее говорят.',
+            correct: false,
+            feedback: 'Нет. Не маскируйся. Журналист не должен заходить в разговор через легенду, если на то нет исключительных оснований.'
+          }
+        ]
+      },
+      {
+        id: 5,
+        scene: 'Ты уже разговариваешь с участником митинга',
+        question: 'Какие вопросы здесь сработают лучше всего?',
+        options: [
+          {
+            text: '“Охарактеризуйте, пожалуйста, вашу мотивацию в контексте современной политической ситуации в Восточной Европе”.',
+            correct: false,
+            feedback: 'Ты очень умный. Но для репортажа нужны простые и живые вопросы.'
+          },
+          {
+            text: '“Почему вы пришли сюда сегодня? Кто рядом с вами? Что для вас самое важное в этой акции?”',
+            correct: true,
+            feedback: 'Да. Простые, конкретные, открытые вопросы помогают собрать ключевую информацию и живую речь героя.'
+          },
+          {
+            text: 'Сразу задаю самый неудобный вопрос, чтобы собеседник вышел из зоны комфорта и сказал что-то интересное.',
+            correct: false,
+            feedback: 'Необязательно. Сложные и неудобные вопросы часто лучше оставлять ближе к концу, когда контакт уже установлен.'
+          }
+        ]
+      },
+      {
+        id: 6,
+        scene: 'Блокнот уже полон, но текст ещё не начался',
+        question: 'С чего лучше начать сам текст?',
+        options: [
+          {
+            text: '“12 апреля в 18:00 корреспондент издания прибыл на место проведения мероприятия, организованного инициативной группой...”',
+            correct: false,
+            feedback: 'Репортаж лучше открывать сценой, сильной деталью, яркой цитатой.'
+          },
+          {
+            text: 'С самого яркого момента: “— Верните Моргенштерна домой, он единственный достойный россиянин! — кричит парень в серебряном пуховике, пока пожилой полицейский крутит пальцем у виска, глядя на него”.',
+            correct: true,
+            feedback: 'Вот это уже похоже на живое начало. Читатель сразу попадает внутрь события, а не в протокол о нем.'
+          },
+          {
+            text: 'Со справки о музыкальной карьере Моргенштерна и его уезде из страны.',
+            correct: false,
+            feedback: 'Справка может пригодиться позже и очень дозированно. В начале репортажа нужна сцена, а не Википедия.'
+          }
+        ]
+      },
+      {
+        id: 7,
+        scene: 'Ты собираешь композицию материала',
+        question: 'Как композиционно выстроить текст?',
+        options: [
+          {
+            text: 'Иду строго по минутам: в 17:02 я пришёл, в 17:03 посмотрел направо, в 17:04 посмотрел налево...',
+            correct: false,
+            feedback: 'Голая хронология часто делает текст нудным. Впрочем, если ничего получше не придумалии, делайте.'
+          },
+          {
+            text: 'Чередую крупный план и общий, сцену и контекст, короткие реплики и факты, чтобы текст дышал и двигался.',
+            correct: true,
+            feedback: 'Да. Это и есть рабочая логика репортажа: монтаж сцен, смена планов и мостики между частным и общим.'
+          },
+          {
+            text: 'Просто наваливаю как можно больше деталей подряд. Читатель сам поймёт, что из них важно.',
+            correct: false,
+            feedback: 'Нет. Нужны не любые детали, а только работающие на тему и идею материала.'
+          }
+        ]
+      },
+      {
+        id: 8,
+        scene: 'Выбор есть всегда',
+        question: 'Что из этого — хорошая репортажная деталь, которая реально может сработать в тексте?',
+        options: [
+          {
+            text: '“Митинг был очень интересным и довольно атмосферным, было много молодых и пожилых людей, мероприятие было похоже на праздник”.',
+            correct: false,
+            feedback: 'Это стерильная оценка, а не деталь. Ничего не видно, не слышно и не чувствуется.'
+          },
+          {
+            text: '“На картонке маркером выведено: «Верните Алишера, это Пушкин нашего времени». Рядом мужчина лет пятидесяти ест шаурму и ворчит, что пришёл вообще-то за дочь, а остался из любопытства”.',
+            correct: true,
+            feedback: 'Да. Здесь есть предметность, интонация, поведение, странность, человеческий масштаб и намёк на атмосферу события.'
+          },
+          {
+            text: '“Все были как будто не такими, как обычно”.',
+            correct: false,
+            feedback: 'Опять туман. Репортаж не любит размытость. Ему нужны наблюдаемые вещи.'
+          }
+        ]
+      },
+      {
+        id: 9,
+        scene: 'Возвращение в редакцию',
+        question: 'Какой вывод главный редактор скорее всего от тебя ждёт после этого задания?',
+        options: [
+          {
+            text: 'Что репортаж — это когда у тебя громкие прилагательные и побольше собственных эмоций.',
+            correct: false,
+            feedback: 'Не совсем. Шок и пафос не заменяют наблюдение, структуру и голоса героев.'
+          },
+          {
+            text: 'Что репортаж — это событие в развитии, показанное через сцены, детали, героев, живую речь и внятную композицию, а не через сухой пересказ или умничанье.',
+            correct: true,
+            feedback: 'Именно. Событие должно разворачиваться, детали — работать, герои — говорить, а текст — сразу втягивать в происходящее.'
+          },
+          {
+            text: 'Что любой текст можно назвать репортажем, если поставить побольше тире и написать “я был в шоке”.',
+            correct: false,
+            feedback: 'Увы, нет. Хотя некоторые издания и пытались.'
+          }
+        ]
+      }
+    ];
+
+    let current = -1;
+    let rightAnswers = 0;
+
+    const screen = document.getElementById('screen');
+
+    function renderIntro() {
+      screen.innerHTML = `
+        <div class="meta">
+          <div>Формат: короткая учебная история</div>
+          <div>Без баллов, но с последствиями для самооценки</div>
+        </div>
+        <div class="bubble">${intro.text}</div>
+        <div class="bubble">${intro.text2}</div>
+        <div class="footer">
+          <button class="action" id="startBtn">Поехать на задание</button>
+        </div>
+      `;
+      document.getElementById('startBtn').addEventListener('click', () => {
+        current = 0;
+        renderQuestion();
+      });
+    }
+
+    function renderQuestion() {
+      const q = questions[current];
+      screen.innerHTML = `
+        <div class="meta">
+          <div>Эпизод ${current + 1} из ${questions.length}</div>
+          <div>${q.scene}</div>
+        </div>
+        <h2 class="question">${q.question}</h2>
+        <div class="choices">
+          ${q.options.map((opt, i) => `<button class="choice" data-index="${i}">${opt.text}</button>`).join('')}
+        </div>
+      `;
+
+      document.querySelectorAll('.choice').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const index = Number(e.currentTarget.dataset.index);
+          handleAnswer(index);
+        });
+      });
+    }
+
+    function handleAnswer(index) {
+      const q = questions[current];
+      const answer = q.options[index];
+      if (answer.correct) rightAnswers++;
+
+      screen.innerHTML = `
+        <div class="meta">
+          <div>Эпизод ${current + 1} из ${questions.length}</div>
+          <div>${q.scene}</div>
+        </div>
+        <h2 class="question">${q.question}</h2>
+        <div class="result ${answer.correct ? 'good' : 'bad'}">
+          <strong>${answer.correct ? 'Нормально, редактор не орёт.' : 'Редактор тяжело вздыхает.'}</strong><br><br>
+          ${answer.feedback}
+        </div>
+        <div class="bubble"><strong>Ты выбрал:</strong><br>${answer.text}</div>
+        <div class="footer">
+          <button class="action" id="nextBtn">${current === questions.length - 1 ? 'Сдать текст' : 'Дальше'}</button>
+        </div>
+      `;
+
+      document.getElementById('nextBtn').addEventListener('click', () => {
+        if (current === questions.length - 1) {
+          renderEnding();
+        } else {
+          current++;
+          renderQuestion();
+        }
+      });
+    }
+
+    function renderEnding() {
+      let verdict = '';
+      let tone = '';
+
+      if (rightAnswers >= 8) {
+        verdict = 'Тебя оставляют в редакции. Главред говорит: “Ладно. В тебе есть жизнь. Пиши”.';
+        tone = 'Ты понял главное: репортаж — это событие в развитии, увиденное через точные детали, сцены, героев и внятный монтаж материала.';
+      } else if (rightAnswers >= 5) {
+        verdict = 'Тебя пока не увольняют. Но говорят поменьше умничать и побольше смотреть по сторонам.';
+        tone = 'У тебя уже есть чувство сцены, но иногда ты всё ещё соскальзываешь в пересказ, абстракции и канцелярит.';
+      } else {
+        verdict = 'Уволен.';
+        tone = 'Ничего страшного: счастливее будешь.';
+      }
+
+      screen.innerHTML = `
+        <div class="meta">
+          <div>Финал</div>
+          <div>Правильных выборов: ${rightAnswers} из ${questions.length}</div>
+        </div>
+
+        <div class="summary-card">
+          <span class="tag">событие в развитии</span>
+          <span class="tag">детали</span>
+          <span class="tag">герои</span>
+          <span class="tag">сцена</span>
+          <span class="tag">монтаж</span>
+          <span class="tag">простые вопросы</span>
+          <h2 class="question" style="margin-top: 8px;">Первый день пережит</h2>
+          <p>${verdict}</p>
+          <p>${tone}</p>
+          <p><strong>Что стоит запомнить:</strong> репортаж лучше начинать с яркой сцены или цитаты; не стоит тащиться строго по хронологии; нужны работающие детали, а не туманные прилагательные; говорить надо с участниками и очевидцами; журналист представляется и действует открыто; текст строится на чередовании крупного и общего плана.</p>
+        </div>
+
+        <div class="footer">
+          <button class="action" id="restartBtn">Пройти заново</button>
+        </div>
+      `;
+
+      document.getElementById('restartBtn').addEventListener('click', () => {
+        current = -1;
+        rightAnswers = 0;
+        renderIntro();
+      });
+    }
+
+    renderIntro();
+  </script>
+</body>
+</html>

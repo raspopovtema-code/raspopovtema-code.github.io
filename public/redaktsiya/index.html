@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>РЕДАКЦИЯ — Симулятор журналиста</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1008;
+    --paper: #f5f0e8;
+    --paper2: #ede7d4;
+    --red: #c0392b;
+    --gold: #b8860b;
+    --green: #2e7d50;
+    --blue: #1a4f7a;
+    --purple: #6b3fa0;
+    --border: #8b7355;
+    --muted: #7a6a55;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', sans-serif;
+    min-height: 100vh;
+    background-image: repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(139,115,85,0.07) 27px, rgba(139,115,85,0.07) 28px);
+    overflow-x: hidden;
+  }
+
+  /* HEADER */
+  #header {
+    border-bottom: 3px double var(--border);
+    text-align: center;
+    padding: 16px 20px 10px;
+    background: var(--paper);
+    position: sticky; top: 0; z-index: 50;
+  }
+  #header .masthead {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.8rem, 5vw, 3.2rem);
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    line-height: 1;
+  }
+  #header .subtitle {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 3px;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 3px 0;
+    display: inline-block;
+  }
+
+  /* STATS BAR */
+  #statsbar {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--paper2);
+    flex-wrap: wrap;
+  }
+  .stat {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+  }
+  .stat-label { text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+  .stat-bar-wrap { width: 80px; height: 9px; background: rgba(0,0,0,0.1); border: 1px solid var(--border); overflow: hidden; }
+  .stat-bar { height: 100%; transition: width 0.6s cubic-bezier(.4,0,.2,1), background 0.4s; }
+  .stat-val { font-weight: 600; min-width: 24px; color: var(--ink); }
+
+  /* GAME AREA */
+  #game { max-width: 800px; margin: 0 auto; padding: 22px 16px 60px; }
+  .screen { display: none; animation: fadeIn 0.4s ease; }
+  .screen.active { display: block; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+
+  /* INTRO */
+  #screen-intro { text-align: center; padding: 20px 0; }
+  .press-badge {
+    display: inline-block; border: 2px solid var(--ink);
+    padding: 5px 18px; font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.62rem; letter-spacing: 0.25em; text-transform: uppercase; margin-bottom: 22px;
+  }
+  .press-badge::before { content: '✦'; margin-right: 8px; }
+  .press-badge::after  { content: '✦'; margin-left:  8px; }
+  .intro-headline {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.5rem, 4.5vw, 2.6rem);
+    font-weight: 900; line-height: 1.15; margin-bottom: 14px;
+  }
+  .intro-headline em { font-style: italic; color: var(--red); }
+  .intro-lead { font-size: 0.95rem; line-height: 1.7; color: var(--muted); max-width: 520px; margin: 0 auto 24px; }
+  .rules-box {
+    border: 1px solid var(--border); background: var(--paper2);
+    padding: 16px 22px; text-align: left; max-width: 460px; margin: 0 auto 24px;
+  }
+  .rules-box h3 {
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.62rem;
+    letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted);
+    margin-bottom: 9px; border-bottom: 1px solid var(--border); padding-bottom: 5px;
+  }
+  .rules-box ul { list-style: none; font-size: 0.85rem; line-height: 1.9; }
+  .rules-box ul li::before { content: '→ '; color: var(--red); font-weight: 600; }
+
+  /* SCENE */
+  .progress-dots { display: flex; justify-content: center; gap: 7px; margin-bottom: 22px; }
+  .dot { width: 9px; height: 9px; border: 1.5px solid var(--border); border-radius: 50%; transition: background 0.3s; }
+  .dot.done    { background: var(--ink); border-color: var(--ink); }
+  .dot.current { background: var(--red); border-color: var(--red); animation: pulse 1.2s infinite; }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.35)} }
+
+  .scene-number {
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.62rem;
+    letter-spacing: 0.28em; text-transform: uppercase; color: var(--muted);
+    margin-bottom: 9px; display: flex; align-items: center; gap: 10px;
+  }
+  .scene-number::after { content:''; flex:1; height:1px; background:var(--border); }
+  .scene-tag {
+    display: inline-block; background: var(--ink); color: var(--paper);
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.58rem;
+    letter-spacing: 0.2em; text-transform: uppercase; padding: 3px 10px; margin-bottom: 12px;
+  }
+  .scene-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.25rem, 3.2vw, 1.85rem);
+    font-weight: 700; line-height: 1.25; margin-bottom: 14px;
+  }
+  .scene-body {
+    font-size: 0.93rem; line-height: 1.8; color: #2a1f10;
+    background: var(--paper2); border-left: 4px solid var(--gold);
+    padding: 14px 18px; margin-bottom: 18px;
+  }
+  .scene-body .qm { font-family:'Playfair Display',serif; font-size:2.5rem; line-height:0; color:var(--gold); opacity:.4; vertical-align:-0.45em; margin-right:3px; }
+  .choices-label {
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.62rem;
+    letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); margin-bottom: 9px;
+  }
+  .choices { display: flex; flex-direction: column; gap: 9px; }
+  .choice-btn {
+    background: var(--paper); border: 1.5px solid var(--border);
+    padding: 12px 16px; text-align: left;
+    font-family: 'IBM Plex Sans', sans-serif; font-size: 0.88rem; line-height: 1.5;
+    cursor: pointer; color: var(--ink); transition: all 0.16s;
+    display: flex; align-items: flex-start; gap: 11px;
+  }
+  .choice-btn:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); transform: translateX(4px); }
+  .choice-btn:hover .cltr { color: var(--gold); }
+  .cltr { font-family:'Playfair Display',serif; font-size:1.05rem; font-weight:700; color:var(--red); min-width:18px; transition:color .16s; }
+
+  /* === INTERACTIVE TYPES === */
+
+  /* SLIDER */
+  .interactive-wrap { margin-bottom: 18px; }
+  .slider-scene { background: var(--paper2); border: 1px solid var(--border); padding: 18px 20px; }
+  .slider-label { font-family:'IBM Plex Mono',monospace; font-size:0.68rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--muted); margin-bottom:12px; }
+  .slider-endpoints { display:flex; justify-content:space-between; font-size:0.78rem; color:var(--muted); margin-bottom:6px; }
+  input[type=range] {
+    width:100%; cursor:pointer;
+    -webkit-appearance:none; height:6px;
+    background: linear-gradient(to right, var(--red) 0%, var(--gold) 50%, var(--green) 100%);
+    border-radius:3px; outline:none;
+    touch-action: pan-x;
+  }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:28px; height:28px; border-radius:50%; background:var(--ink); border:2px solid var(--paper); cursor:pointer; }
+  .slider-current { text-align:center; font-family:'IBM Plex Mono',monospace; font-size:0.8rem; color:var(--ink); margin-top:8px; font-weight:600; }
+  .slider-btn { margin-top:14px; }
+
+  /* DRAG & DROP PRIORITY */
+  .drag-list { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
+  .drag-item {
+    background:var(--paper); border:1.5px solid var(--border);
+    padding:10px 14px; cursor:grab; font-size:0.88rem; line-height:1.4;
+    display:flex; align-items:center; gap:10px; user-select:none;
+    transition: box-shadow .15s, background .2s;
+  }
+  .drag-item.dragging { opacity:0.5; transform:scale(1.02); box-shadow:0 4px 12px rgba(0,0,0,.15); }
+  .drag-item.over { border-color:var(--red); background:rgba(192,57,43,.06); }
+  .drag-handle { color:var(--border); font-size:1rem; flex-shrink:0; }
+  .drag-num { font-family:'IBM Plex Mono',monospace; font-size:0.75rem; font-weight:600; color:var(--red); min-width:20px; flex-shrink:0; }
+  /* Стрелки — всегда видны, основной способ на мобильном */
+  .drag-arrows { display:flex; gap:4px; flex-shrink:0; margin-left:auto; }
+  .drag-arrow-btn {
+    background: var(--paper2); border: 1px solid var(--border);
+    color: var(--ink); font-size: 1rem; width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; border-radius: 2px; flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  }
+  .drag-arrow-btn:active { background: var(--ink); color: var(--paper); }
+
+  /* PRESSURE TIMER */
+  .timer-scene { background: var(--paper2); border: 1px solid var(--border); padding: 18px 20px; }
+  .timer-bar-wrap { height:8px; background:rgba(0,0,0,.1); border:1px solid var(--border); margin-bottom:14px; overflow:hidden; }
+  .timer-bar { height:100%; background:var(--red); transition:width 0.1s linear; }
+  .timer-label { font-family:'IBM Plex Mono',monospace; font-size:0.68rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--red); margin-bottom:10px; font-weight:600; }
+  .timer-choices { display:flex; flex-direction:column; gap:8px; }
+
+  /* HIGHLIGHT / MARK TEXT */
+  .highlight-scene { background:var(--paper2); border:1px solid var(--border); padding:18px 20px; }
+  .hl-instruction { font-family:'IBM Plex Mono',monospace; font-size:0.65rem; letter-spacing:0.18em; text-transform:uppercase; color:var(--muted); margin-bottom:10px; }
+  .hl-text { font-size:0.9rem; line-height:2; color:#2a1f10; }
+  .hl-word {
+    cursor:pointer; border-bottom:2px solid transparent;
+    transition: background .15s, border-color .15s; padding:4px 3px;
+    display: inline-block; line-height: 1.8;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .hl-word:hover { background:rgba(184,134,11,.25); border-color:var(--gold); }
+  .hl-word.marked { background:rgba(192,57,43,.18); border-color:var(--red); }
+  .hl-submit { margin-top:14px; }
+  .hl-count { font-family:'IBM Plex Mono',monospace; font-size:0.72rem; color:var(--muted); margin-top:8px; }
+
+  /* FEEDBACK OVERLAY */
+  #feedback-overlay {
+    display:none; position:fixed; inset:0;
+    background:rgba(26,16,8,.72); z-index:200;
+    align-items:center; justify-content:center; padding:16px;
+  }
+  #feedback-overlay.show { display:flex; animation:fadeIn .3s ease; }
+  .feedback-card {
+    background:var(--paper); max-width:560px; width:100%;
+    border:3px double var(--border); padding:26px 28px; position:relative;
+    max-height:90vh; overflow-y:auto;
+  }
+  .feedback-verdict {
+    font-family:'IBM Plex Mono',monospace; font-size:0.62rem;
+    letter-spacing:0.28em; text-transform:uppercase;
+    padding:4px 12px; display:inline-block; margin-bottom:12px;
+  }
+  .verdict-good { background:var(--green); color:#fff; }
+  .verdict-bad  { background:var(--red);   color:#fff; }
+  .verdict-mid  { background:var(--gold);  color:#fff; }
+  .feedback-title { font-family:'Playfair Display',serif; font-size:1.3rem; font-weight:700; margin-bottom:10px; line-height:1.3; }
+  .feedback-text  { font-size:0.87rem; line-height:1.75; color:#2a1f10; margin-bottom:12px; }
+  .feedback-law {
+    font-family:'IBM Plex Mono',monospace; font-size:0.7rem; color:var(--blue);
+    border:1px dashed var(--blue); padding:9px 13px; margin-bottom:14px; opacity:.9;
+  }
+  .feedback-deltas { display:flex; gap:12px; margin-bottom:18px; flex-wrap:wrap; }
+  .delta { font-family:'IBM Plex Mono',monospace; font-size:0.78rem; padding:4px 11px; border:1px solid var(--border); background:var(--paper2); }
+  .delta.pos { color:var(--green); border-color:var(--green); }
+  .delta.neg { color:var(--red);   border-color:var(--red); }
+  .delta.neu { color:var(--muted); }
+
+  /* RESULTS */
+  #screen-results { text-align:center; }
+  .results-headline { font-family:'Playfair Display',serif; font-size:clamp(1.4rem,4vw,2.3rem); font-weight:900; margin-bottom:6px; }
+  .results-subhead { font-family:'IBM Plex Mono',monospace; font-size:0.65rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--muted); margin-bottom:24px; }
+  .final-stats { display:flex; justify-content:center; gap:14px; margin-bottom:26px; flex-wrap:wrap; }
+  .final-stat-box { border:2px solid var(--border); padding:14px 20px; min-width:130px; background:var(--paper2); }
+  .final-stat-name { font-family:'IBM Plex Mono',monospace; font-size:0.58rem; letter-spacing:0.18em; text-transform:uppercase; color:var(--muted); margin-bottom:7px; }
+  .final-stat-num  { font-family:'Playfair Display',serif; font-size:2.2rem; font-weight:900; line-height:1; }
+  .profile-box { border:3px double var(--border); padding:22px 26px; max-width:540px; margin:0 auto 24px; text-align:left; background:var(--paper2); }
+  .profile-title { font-family:'IBM Plex Mono',monospace; font-size:0.6rem; letter-spacing:0.22em; text-transform:uppercase; color:var(--muted); margin-bottom:5px; }
+  .profile-name  { font-family:'Playfair Display',serif; font-size:1.4rem; font-weight:700; color:var(--red); margin-bottom:10px; }
+  .profile-desc  { font-size:0.88rem; line-height:1.75; color:#2a1f10; }
+  .ornament { text-align:center; color:var(--border); font-size:0.85rem; letter-spacing:0.35em; margin:14px 0; }
+  .columns-note { column-count:2; column-gap:24px; column-rule:1px solid var(--border); font-size:0.83rem; line-height:1.7; color:var(--muted); text-align:left; max-width:540px; margin:0 auto 22px; }
+  @media(max-width:500px) { .columns-note{column-count:1} .final-stats{gap:10px} }
+
+  /* BUTTONS */
+  .btn { display:inline-block; background:var(--ink); color:var(--paper); font-family:'IBM Plex Mono',monospace; font-size:0.74rem; letter-spacing:0.18em; text-transform:uppercase; padding:12px 26px; border:none; cursor:pointer; transition:all .18s; margin-top:6px; }
+  .btn:hover { background:var(--red); transform:translateY(-2px); }
+  .btn-outline { background:transparent; color:var(--ink); border:2px solid var(--ink); }
+  .btn-outline:hover { background:var(--ink); color:var(--paper); }
+
+  /* ═══════════════════════════════════════════════
+     МОБИЛЬНАЯ АДАПТАЦИЯ — max-width: 600px
+  ═══════════════════════════════════════════════ */
+
+  /* Убираем hover-трансформации на touch */
+  @media (hover: none) {
+    .choice-btn:hover {
+      background: var(--paper);
+      color: var(--ink);
+      border-color: var(--border);
+      transform: none;
+    }
+    .choice-btn:hover .cltr { color: var(--red); }
+    .choice-btn:active {
+      background: var(--ink);
+      color: var(--paper);
+      border-color: var(--ink);
+    }
+    .choice-btn:active .cltr { color: var(--gold); }
+    .btn:hover { background: var(--ink); transform: none; }
+    .btn:active { background: var(--red); }
+    .drag-item { touch-action: none; }
+  }
+
+  @media (max-width: 600px) {
+
+    /* HEADER */
+    #header { padding: 10px 12px 8px; }
+    #header .masthead { font-size: clamp(1.4rem, 8vw, 2rem); letter-spacing: 0.08em; }
+    #header .subtitle { font-size: 0.52rem; letter-spacing: 0.18em; }
+
+    /* STATS BAR — компактная горизонтальная полоска */
+    #statsbar {
+      gap: 0;
+      padding: 0;
+      justify-content: stretch;
+    }
+    .stat {
+      flex: 1;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      padding: 6px 4px;
+      border-right: 1px solid var(--border);
+      font-size: 0.6rem;
+    }
+    .stat:last-child { border-right: none; }
+    .stat-label { font-size: 0.52rem; letter-spacing: 0.05em; }
+    .stat-bar-wrap { width: 100%; max-width: 60px; height: 6px; }
+    .stat-val { font-size: 0.72rem; min-width: auto; }
+
+    /* GAME AREA */
+    #game { padding: 14px 12px 80px; }
+
+    /* INTRO */
+    #screen-intro { padding: 10px 0; }
+    .press-badge { font-size: 0.55rem; letter-spacing: 0.18em; padding: 4px 12px; margin-bottom: 16px; }
+    .intro-headline { font-size: clamp(1.3rem, 7vw, 2rem); margin-bottom: 12px; }
+    .intro-lead { font-size: 0.88rem; margin-bottom: 18px; }
+    .rules-box { padding: 12px 14px; margin-bottom: 18px; }
+    .rules-box ul { font-size: 0.82rem; line-height: 1.7; }
+
+    /* SCENE */
+    .progress-dots { gap: 5px; margin-bottom: 16px; flex-wrap: wrap; justify-content: center; }
+    .dot { width: 8px; height: 8px; }
+    .scene-number { font-size: 0.55rem; letter-spacing: 0.18em; margin-bottom: 7px; }
+    .scene-tag { font-size: 0.52rem; letter-spacing: 0.14em; padding: 3px 8px; margin-bottom: 10px; }
+    .scene-title { font-size: clamp(1.1rem, 5.5vw, 1.5rem); margin-bottom: 12px; }
+    .scene-body {
+      font-size: 0.88rem;
+      line-height: 1.7;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+    }
+    .scene-body .qm { font-size: 2rem; }
+
+    /* КНОПКИ ВЫБОРА — большие, удобные для пальца */
+    .choices { gap: 8px; }
+    .choice-btn {
+      padding: 14px 14px;
+      font-size: 0.9rem;
+      line-height: 1.45;
+      min-height: 52px;
+      gap: 10px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .cltr { font-size: 1rem; min-width: 16px; }
+
+    /* DRAG & DROP — на мобильном чуть крупнее */
+    .choices-label { font-size: 0.57rem; letter-spacing: 0.16em; }
+    .drag-item {
+      padding: 12px 10px;
+      font-size: 0.86rem;
+      line-height: 1.4;
+      gap: 8px;
+      min-height: 52px;
+    }
+    .drag-handle { font-size: 1.1rem; padding: 2px 4px; }
+    .drag-num { font-size: 0.82rem; min-width: 18px; }
+    .drag-arrow-btn { width: 38px; height: 38px; font-size: 1.1rem; }
+
+    /* ТАЙМЕР */
+    .timer-scene { padding: 14px 14px; }
+    .timer-label { font-size: 0.62rem; letter-spacing: 0.14em; }
+    .timer-bar-wrap { height: 10px; margin-bottom: 12px; }
+
+    /* ГЛАВНАЯ КНОПКА */
+    .btn {
+      font-size: 0.7rem;
+      letter-spacing: 0.14em;
+      padding: 13px 20px;
+      width: 100%;
+      text-align: center;
+      display: block;
+    }
+    .btn-outline { width: auto; display: inline-block; }
+
+    /* FEEDBACK OVERLAY */
+    #feedback-overlay { padding: 10px; align-items: flex-end; }
+    .feedback-card {
+      padding: 18px 16px;
+      max-height: 88vh;
+      border-radius: 0;
+    }
+    .feedback-verdict { font-size: 0.58rem; letter-spacing: 0.2em; }
+    .feedback-title { font-size: 1.15rem; margin-bottom: 8px; }
+    .feedback-text { font-size: 0.84rem; line-height: 1.65; margin-bottom: 10px; }
+    .feedback-law { font-size: 0.64rem; padding: 8px 10px; margin-bottom: 12px; }
+    .feedback-deltas { gap: 8px; margin-bottom: 14px; }
+    .delta { font-size: 0.72rem; padding: 4px 9px; }
+
+    /* GAMEOVER OVERLAY */
+    #gameover-overlay { align-items: flex-end !important; padding: 0 !important; }
+    #gameover-overlay .feedback-card {
+      border-radius: 0;
+      max-height: 80vh;
+      padding: 24px 18px;
+    }
+
+    /* RESULTS */
+    .results-headline { font-size: clamp(1.2rem, 6vw, 1.8rem); }
+    .final-stats { gap: 8px; }
+    .final-stat-box { padding: 10px 14px; min-width: 90px; }
+    .final-stat-name { font-size: 0.5rem; letter-spacing: 0.12em; }
+    .final-stat-num { font-size: 1.8rem; }
+    .profile-box { padding: 16px 16px; }
+    .profile-name { font-size: 1.2rem; }
+    .profile-desc { font-size: 0.84rem; }
+    .columns-note { column-count: 1; font-size: 0.8rem; }
+
+    /* SCROLL страницы при открытом оверлее */
+    body.overlay-open { overflow: hidden; }
+  }
+
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div class="masthead">РЕДАКЦИЯ</div>
+  <div class="subtitle">симулятор журналиста · право и этика · учебная игра</div>
+</div>
+
+<div id="statsbar">
+  <div class="stat">
+    <span class="stat-label">Репутация редакции</span>
+    <div class="stat-bar-wrap"><div class="stat-bar" id="bar-rep" style="width:55%;background:#2e7d50"></div></div>
+    <span class="stat-val" id="val-rep">55</span>
+  </div>
+  <div class="stat">
+    <span class="stat-label">Совесть</span>
+    <div class="stat-bar-wrap"><div class="stat-bar" id="bar-con" style="width:60%;background:#1a4f7a"></div></div>
+    <span class="stat-val" id="val-con">60</span>
+  </div>
+  <div class="stat">
+    <span class="stat-label">Хайп</span>
+    <div class="stat-bar-wrap"><div class="stat-bar" id="bar-buz" style="width:40%;background:#6b3fa0"></div></div>
+    <span class="stat-val" id="val-buz">40</span>
+  </div>
+</div>
+
+<div id="game">
+
+  <!-- INTRO -->
+  <div id="screen-intro" class="screen active">
+    <div class="press-badge">журналистика · право · этика</div>
+    <h1 class="intro-headline">Сегодня твой<br><em>первый рабочий день</em><br>в редакции</h1>
+    <p class="intro-lead">Тебя взяли в «Городской вестник». Впереди — одиннадцать острых ситуаций. Одни потребуют простого выбора, другие — расставить приоритеты или принять решение под давлением времени. Последствия — всегда есть.</p>
+    <div class="rules-box">
+      <h3>Правила игры</h3>
+      <ul>
+        <li>11 ситуаций разных форматов</li>
+        <li>Три показателя: репутация редакции, совесть, хайп</li>
+        <li>Правовой комментарий — только после ответа</li>
+        <li>В конце (если ты до него дойдешь:) — твой профессиональный портрет</li>
+      </ul>
+    </div>
+    <button class="btn" onclick="startGame()">→ Начать смену</button>
+  </div>
+
+  <!-- SCENE -->
+  <div id="screen-scene" class="screen">
+    <div class="progress-dots" id="progress-dots"></div>
+    <div class="scene-number" id="scene-number"></div>
+    <div class="scene-tag" id="scene-tag"></div>
+    <h2 class="scene-title" id="scene-title"></h2>
+    <div class="scene-body" id="scene-body"></div>
+    <div id="interaction-area"></div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="screen-results" class="screen">
+    <div class="results-headline">Смена окончена</div>
+    <div class="results-subhead">итоги рабочего дня</div>
+    <div class="final-stats">
+      <div class="final-stat-box"><div class="final-stat-name">Репутация редакции</div><div class="final-stat-num" id="final-rep">—</div></div>
+      <div class="final-stat-box"><div class="final-stat-name">Совесть журналиста</div><div class="final-stat-num" id="final-con">—</div></div>
+      <div class="final-stat-box"><div class="final-stat-name">Хайп</div><div class="final-stat-num" id="final-buz">—</div></div>
+    </div>
+    <div class="profile-box">
+      <div class="profile-title">Ваш профессиональный тип</div>
+      <div class="profile-name" id="profile-name">—</div>
+      <div class="profile-desc" id="profile-desc">—</div>
+    </div>
+    <div class="ornament">✦ ✦ ✦</div>
+    <div class="columns-note" id="columns-note"></div>
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:320px;margin:0 auto">
+    <button class="btn" onclick="restartGame()">↺ Сыграть снова</button>
+    <button class="btn btn-outline" onclick="showDiscussion()">→ Вопросы для дискуссии</button>
+    </div>
+  </div>
+</div>
+
+<!-- FEEDBACK OVERLAY -->
+<div id="feedback-overlay">
+  <div class="feedback-card">
+    <div class="feedback-verdict" id="fb-verdict"></div>
+    <div class="feedback-title"   id="fb-title"></div>
+    <div class="feedback-text"    id="fb-text"></div>
+    <div class="feedback-law"     id="fb-law"></div>
+    <div class="feedback-deltas"  id="fb-deltas"></div>
+    <button class="btn" id="fb-next-btn" onclick="nextScene()">Следующая ситуация →</button>
+  </div>
+</div>
+
+<!-- GAME OVER OVERLAY -->
+<div id="gameover-overlay" style="display:none;position:fixed;inset:0;background:rgba(26,16,8,.88);z-index:300;align-items:center;justify-content:center;padding:16px;">
+  <div class="feedback-card" style="text-align:center;max-width:520px;">
+    <div id="go-icon" style="font-size:3rem;margin-bottom:12px;">💀</div>
+    <div id="go-label" style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.28em;text-transform:uppercase;padding:4px 12px;display:inline-block;margin-bottom:14px;background:#c0392b;color:#fff;">ИГРА ОКОНЧЕНА</div>
+    <div id="go-title" style="font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:700;margin-bottom:12px;line-height:1.3;"></div>
+    <div id="go-text" style="font-size:0.88rem;line-height:1.75;color:#2a1f10;margin-bottom:20px;"></div>
+    <button class="btn" onclick="restartGame()">↺ Начать заново</button>
+  </div>
+</div>
+
+<script>
+// ── Audio ──────────────────────────────────────────────────────────────────
+const AC = new (window.AudioContext || window.webkitAudioContext)();
+function resumeAC() { if (AC.state === 'suspended') AC.resume(); }
+
+function playTone(freq, type, dur, vol, delay) {
+  resumeAC();
+  const o = AC.createOscillator();
+  const g = AC.createGain();
+  o.connect(g); g.connect(AC.destination);
+  o.type = type || 'sine';
+  o.frequency.setValueAtTime(freq, AC.currentTime + (delay||0));
+  g.gain.setValueAtTime(vol||0.18, AC.currentTime + (delay||0));
+  g.gain.exponentialRampToValueAtTime(0.001, AC.currentTime + (delay||0) + dur);
+  o.start(AC.currentTime + (delay||0));
+  o.stop(AC.currentTime + (delay||0) + dur);
+}
+
+function sfxClick()  { playTone(520,'square',.08,.12); }
+function sfxGood()   { [0,.12,.22].forEach((d,i)=>playTone([440,554,660][i],'sine',.18,.15,d)); }
+function sfxBad()    { playTone(180,'sawtooth',.3,.18); setTimeout(()=>playTone(140,'sawtooth',.25,.12),120); }
+function sfxMid()    { playTone(330,'triangle',.2,.14); setTimeout(()=>playTone(370,'triangle',.15,.12),160); }
+function sfxTick()   { playTone(600,'square',.04,.08); }
+function sfxUrgent() { playTone(900,'square',.06,.2); }
+function sfxPage()   { playTone(280,'sine',.1,.1); setTimeout(()=>playTone(340,'sine',.12,.1),100); }
+function sfxDrag()   { playTone(400,'triangle',.06,.08); }
+function sfxDone()   {
+  [0,.15,.3,.45].forEach((d,i)=>playTone([330,440,550,660][i],'sine',.3,.14,d));
+}
+
+// ── State ──────────────────────────────────────────────────────────────────
+let state = { rep:50, con:45, buz:35, scene:0 };
+
+// ── Scenes ─────────────────────────────────────────────────────────────────
+// type: 'choice' | 'slider' | 'drag' | 'timer' | 'highlight'
+const SCENES = [
+
+  // 1. CHOICE — источники
+  {
+    number:"Ситуация 1 из 11", tag:"Защита источников", type:"choice",
+    title:"Источник просит анонимности",
+    body:"Чиновник из городской администрации передал документы о коррупции в закупках. Информация достоверная и важная. Но он требует полной анонимности. Редактор говорит: «Укажи источник — это усилит доверие читателей. С каких пор нам вообще жаль чиновников, которые нас вечно прессуют?».",
+    law:"⚖ Закон о СМИ РФ, ст. 41: редакция обязана хранить тайну источника по его требованию. Разглашение — уголовная ответственность.",
+    choices:[
+      { text:"Публикую материал, сохраняя анонимность источника.", rep:+6, con:+5, buz:-2, verdict:"good", title:"Профессиональный поступок", feedback:"Вы соблюли закон и этический кодекс. Источник будет доверять вам в будущем — а это ценнее одной публикации." },
+      { text:"Называю источник — редактор прав, это повысит доверие к материалу.", rep:-14, con:-12, buz:+14, verdict:"bad", title:"Нарушение закона и доверия", feedback:"Вы нарушили ст. 41 Закона о СМИ. Источник под угрозой, а другие информаторы больше не придут к вам." },
+      { text:"Откладываю публикацию и нахожу второй источник для верификации.", rep:+4, con:+4, buz:-5, verdict:"mid", title:"Осторожный подход", feedback:"Двойная верификация — золотой стандарт. Вы немного проиграли в скорости, но выиграли в надёжности." }
+    ]
+  },
+
+  // 2. CHOICE — фото с места трагедии
+  {
+    number:"Ситуация 2 из 11", tag:"Приватность и фото", type:"choice",
+    title:"Кадр с места трагедии",
+    body:"Произошёл пожар. Ваш фотограф прислал сильный снимок: убитая горем мать держит фотографию сына. Женщина не знала, что её снимают. Редактор хочет поставить фото на первую полосу.",
+    law:"⚖ ГК РФ ст. 152.1: изображение человека можно публиковать только с его согласия.Исключения — общественный интерес или съёмка на публичных мероприятиях. Суды трактуют общественный интерес достаточно узко, поэтому публикация крупного изображения пострадавшего без согласия может привести к иску.",
+    choices:[
+      { text:"Публикую с полностью размытым лицом — анонимность сохранена.", rep:+5, con:+4, buz:-2, verdict:"good", title:"Этика прежде всего", feedback:"Вы защитили человека в момент горя и не нарушили закон. Снимок всё равно передаёт трагедию — без лица." },
+      { text:"Публикую с частичным размытием — читатель почувствует эмоцию.", rep:+1, con:-3, buz:+9, verdict:"mid", title:"Половинчатое решение", feedback:"Частичное размытие снижает, но не снимает юридический риск по ст. 152.1 ГК РФ. Женщину могут узнать знакомые." },
+      { text:"Публикую без изменений — это сильный кадр, редактор прав.", rep:-12, con:-14, buz:+16, verdict:"bad", title:"Нарушение прав личности", feedback:"Публикация без согласия нарушает ст. 152.1 ГК РФ. Хайп не оправдывает вторжение в частную жизнь человека в момент трагедии. Редакция под угрозой иска." }
+    ]
+  },
+
+  // 3. DRAG — расставить приоритеты при верификации
+  {
+    number:"Ситуация 3 из 11", tag:"Стандарты верификации", type:"drag",
+    title:"Как проверять информацию?",
+    body:"Вам пришёл сигнал о крупном мошенничестве в городской больнице. Расставьте шаги в правильном порядке — от первого к последнему.",
+    law:"⚖ Кодекс профессиональной этики российского журналиста: журналист проверяет достоверность информации, прежде чем публиковать. «Скорость» не снимает ответственности.",
+    items:[
+      { id:"a", text:"Связаться с официальным представителем больницы за комментарием" },
+      { id:"b", text:"Найти второй независимый источник, подтверждающий факты" },
+      { id:"c", text:"Изучить официальные документы и открытые данные" },
+      { id:"d", text:"Опубликовать материал" }
+    ],
+    correctOrder:["c","b","a","d"],
+    evaluate: function(order) {
+      const correct = ["c","b","a","d"];
+      const labels = { c:"изучить документы", b:"найти второй источник", a:"получить официальный комментарий", d:"опубликовать" };
+      let score = 0;
+      order.forEach((id,i)=>{ if(id===correct[i]) score++; });
+      const correctStr = correct.map((id,i)=>`${i+1}. ${labels[id]}`).join(' → ');
+      if (score >= 3) return { verdict:"good", title:"Профессиональная верификация", feedback:`Правильный порядок: ${correctStr}. Именно так: сначала документы, независимый источник, официальная позиция — и только потом публикация.`, rep:+5, con:+4, buz:-3 };
+      if (score >= 1) return { verdict:"mid",  title:"Порядок имеет значение", feedback:`Некоторые шаги верны, но правильный порядок: ${correctStr}. Публикация без официального комментария — юридическая уязвимость.`, rep:+1, con:+1, buz:+6 };
+      return               { verdict:"bad",  title:"Нарушение стандартов", feedback:`Правильный порядок: ${correctStr}. Опубликовать непроверенное первым — значит рисковать иском о диффамации и потерей доверия читателей.`, rep:-10, con:-8, buz:+16 };
+    }
+  },
+
+  // 4. TIMER — редактор давит
+  {
+    number:"Ситуация 4 из 11", tag:"Давление и скорость", type:"timer",
+    title:"«Публикуй сейчас, проверишь потом»",
+    body:"Конкуренты опубликовали сенсацию: мэр города якобы владеет офшорами. Редактор требует немедленно выйти с аналогичным материалом. У вас — один непроверенный Telegram-источник. До закрытия номера 20 секунд.",
+    law:"⚖ Ст. 128.1 УК РФ (клевета): распространение заведомо ложных сведений грозит штрафом до 5 млн руб. или лишением свободы. Редакция несёт солидарную ответственность.",
+    timerSeconds:20,
+    choices:[
+      { text:"Публикую — нельзя отставать от конкурентов.", rep:-14, con:-14, buz:+15, verdict:"bad", title:"Катастрофическая ошибка", feedback:"Один непроверенный Telegram-канал — не источник. Если информация окажется ложной, редакция получит иск о клевете по ст. 128.1 УК РФ." },
+      { text:"Пишу «по данным такого-то СМИ».", rep:-4, con:-5, buz:+8, verdict:"mid", title:"Риторический щит", feedback:"Закон о СМИ освобождает редакцию от ответственности, если информация точно воспроизведена с указанием источника (за некоторыми исключениями, среди них, например информация, направленная на дискредитацию ВС РФ). Но это не заменяет проверки: читатели всё равно воспринимают публикацию как материал вашего издания. Половинчатое решение." },
+      { text:"Отказываюсь публиковать без верификации.", rep:+6, con:+8, buz:-4, verdict:"good", title:"Профессиональное мужество", feedback:"Выстоять под давлением — один из самых сложных поступков в журналистике. Если конкуренты ошибутся — вы окажетесь правы. Стандарты важнее скорости." }
+    ],
+    timeoutChoice: 0
+  },
+
+  // 5. CHOICE — конфликт интересов
+  {
+    number:"Ситуация 5 из 11", tag:"Конфликт интересов", type:"choice",
+    title:"Материал о компании друга",
+    body:"Редактор поручает написать обзор застройщика «СтройГрупп». Вы вспоминаете: гендиректор этой компании — ваш близкий друг. Да, такое сейчас время — приходится специально вспоминать, кто тебе друг. Полгода назад он оказал вам финансовую помощь (занял денег на ставку, а после вашего проигрыша разрешил не отдавать).",
+    law:"⚖ Кодекс профессиональной этики российского журналиста, п. 5: журналист избегает ситуаций, в которых личные интересы могут войти в противоречие с профессиональным долгом.",
+    choices:[
+      { text:"Молчу и пишу — постараюсь быть объективным.", rep:-10, con:-15, buz:+8, verdict:"bad", title:"Скрытый конфликт интересов", feedback:"Даже если материал объективен — факт умолчания разрушает доверие. Это нарушение профессионального кодекса. Тем более вычислить вашу связь можно в два счета через соцсети. " },
+      { text:"Сообщаю редактору и прошу передать материал коллеге.", rep:+6, con:+8, buz:-4, verdict:"good", title:"Честный профессионализм", feedback:"Раскрытие конфликта интересов — признак зрелости. Вы потеряли материал, но сохранили репутацию." },
+      { text:"Пишу и добавляю в конце: «Автор лично знаком с директором».", rep:+3, con:+4, buz:+2, verdict:"mid", title:"Прозрачность — шаг вперёд", feedback:"Раскрытие связи — правильный шаг, но лучше всё же передать материал незаинтересованному журналисту, потому что такая приписка выглядит шизовенько." }
+    ]
+  },
+
+  // 6. CHOICE — несовершеннолетние
+  {
+    number:"Ситуация 6 из 11", tag:"Несовершеннолетние", type:"choice",
+    title:"Интервью с подростком",
+    body:"Вы готовите репортаж о буллинге. 14-летний ученик сам подошёл и охотно рассказал, как его унижают. Просит опубликовать — хочет привлечь внимание. Связаться с родителями не получается несколько суток.",
+    law:"⚖ Ст. 41 Закона о СМИ: при публикации материалов с участием несовершеннолетних необходимо согласие законных представителей. Исключений для «добровольного» согласия самого ребёнка закон не предусматривает.",
+    choices:[
+      { text:"Публикую — подросток сам пришёл и дал согласие.", rep:-13, con:-13, buz:+13, verdict:"bad", title:"Нарушение закона и этики", feedback:"14-летний не может дать юридически значимое согласие. Вы нарушили закон и подставили ребёнка под удар со стороны обидчиков." },
+      { text:"Жду согласия родителей, потом публикую.", rep:+4, con:+4, buz:-2, verdict:"good", title:"Правильно по закону и совести", feedback:"Вы защитили ребёнка и соблюли закон. Ожидание — цена, которую стоит заплатить." },
+      { text:"Публикую в полностью анонимизированном виде.", rep:+3, con:+3, buz:+4, verdict:"mid", title:"Разумный компромисс", feedback:"Анонимизация снижает риски. Формально закон не нарушен. Но идеально — всё же согласие родителей." }
+    ]
+  },
+
+  // 7. CHOICE — скрытая запись
+  {
+    number:"Ситуация 7 из 11", tag:"Скрытая запись", type:"choice",
+    title:"Очки с камерой",
+    body:"Вы берёте интервью у чиновника о коррупции в ЖКХ. Он говорит откровенно — но категорически против любой записи. Вы уже ее ведете. Чиновник не знает. Материал может стать сенсацией.",
+    law:"⚖ Закон о СМИ, ст. 50: скрытая запись может быть распространена журналистом, если она сделана в целях защиты общественного интереса и не нарушает конституционные права граждан. Суды обычно трактуют это ограничительно. ГК РФ ст. 152.2 защищает частную жизнь.",
+    choices:[
+      { text:"Использую запись — общественный интерес важнее.", rep:-6, con:-10, buz:+10, verdict:"mid", title:"Спорное решение", feedback:"Ст. 50 допускает скрытую запись в исключительных случаях, но «хорошая история» — не основание. Если чиновник подаст иск, редакции будет сложно доказать необходимость." },
+      { text:"Удаляю видео и работаю только с тем, что сказано под запись.", rep:+4, con:+4, buz:-2, verdict:"good", title:"Профессиональная этика", feedback:"Правильно. Материал без скрытой записи слабее, но редакция защищена. Ст. 50 — это исключение, а не правило." },
+      { text:"Использую только как личные заметки для верификации, не публикую само видео.", rep:+3, con:+2, buz:-3, verdict:"mid", title:"Компромисс с оговорками", feedback:"Использование для личной верификации — серая зона. Сам факт записи без согласия уже проблематичен." }
+    ]
+  },
+
+  // 8. CHOICE — снятие подписи
+  {
+    number:"Ситуация 8 из 11", tag:"Право на имя", type:"choice",
+    title:"Редактор изменил твой текст",
+    body:"Вы написали взвешенный материал о протестах против местного мэра. Редактор перед публикацией добавил несколько абзацев с явно провластной риторикой, которую вы не писали и с которой категорически не согласны. Материал выходит с вашей подписью через два часа.",
+    law:"⚖ Закон о СМИ РФ, ст. 47, п. 8: журналист вправе снять свою подпись под материалом, содержание которого было искажено в процессе редакционной подготовки. Это прямое право, предусмотренное законом.",
+    choices:[
+      { text:"Ничего не делаю — редактор имеет право на правку.", rep:-8, con:-14, buz:+14, verdict:"bad", title:"Капитуляция", feedback:"Редактор вправе редактировать, но не вправе подписывать вашим именем то, чего вы не писали. Молчание здесь — согласие. Вы потеряли и совесть, и часть репутации." },
+      { text:"Требую снять мою подпись под изменённым текстом.", rep:+4, con:+5, buz:-1, verdict:"good", title:"Законное право", feedback:"Именно так. Ст. 47 п. 8 даёт вам это право явно. Снятие подписи — не скандал, а профессиональная позиция. Редакция обязана её уважать." },
+      { text:"Публикую, но пишу опровержение в личном блоге.", rep:-3, con:-4, buz:+10, verdict:"mid", title:"Публичный конфликт", feedback:"Публичное опровержение создаёт хайп, но не решает проблему, потому что материал-то вышел. И вышел под вашим именем." }
+    ]
+  },
+
+  // 9. CHOICE — пропаганда нацпревосходства
+  {
+    number:"Ситуация 9 из 11", tag:"Разжигание ненависти", type:"choice",
+    title:"Редактор требует «заострить» текст",
+    body:"Вы написали аналитический материал о росте числа мигрантов в городе. Редактор возвращает текст: «Слишком нейтрально. Добавь про то, что они не хотят интегрироваться, ведут себя как хозяева, вытесняют местных». Он хочет формулировки, явно принижающие достоинство мигрантов как группы.",
+    law:"⚖ Конституция РФ, ст. 29 ч. 2: запрещается пропаганда, возбуждающая ненависть и дискриминацию по национальному признаку. Закон о СМИ РФ, ст. 4: СМИ не вправе использоваться для разжигания национальной розни. УК РФ, ст. 280.4 и 282: уголовная ответственность за возбуждение ненависти.",
+    choices:[
+      { text:"Добавляю формулировки — редактор знает аудиторию.", rep:-15, con:-16, buz:+14, verdict:"bad", title:"Нарушение Конституции", feedback:"Вы написали пропаганду национального превосходства. Это нарушает ст. 29 Конституции РФ и ст. 4 Закона о СМИ. Ответственность — уголовная, по ст. 282 УК РФ. Хайп не стоит срока." },
+      { text:"Отказываюсь и объясняю редактору правовые риски.", rep:+4, con:+5, buz:-2, verdict:"good", title:"Правовая и этическая позиция", feedback:"Верно. Редактор, возможно, не осознаёт риски. Ваш отказ защищает и вас, и редакцию. Ст. 29 Конституции — прямой запрет, и незнание закона не освобождает от ответственности." },
+      { text:"Добавляю более мягкие формулировки — компромисс.", rep:-4, con:-8, buz:+8, verdict:"mid", title:"Скользкий компромисс", feedback:"Даже «смягчённые» формулировки, унижающие группу людей по национальному признаку, могут квалифицироваться по ст. 282 УК РФ. Линия между «острым материалом» и разжиганием ненависти тонкая — и опасная." }
+    ]
+  },
+
+  // 10. CHOICE — цензура
+  {
+    number:"Ситуация 10 из 11", tag:"Цензура", type:"choice",
+    title:"Звонок из силовых структур",
+    body:"Ваш материал о хищениях в городском строительстве готов к выходу. За час до публикации главному редактору звонит человек, представившийся сотрудником ФСБ. Он «настоятельно рекомендует» материал не публиковать, не объясняя причин. Редактор передаёт это вам и ждёт вашего мнения.",
+    law:"⚖ Конституция РФ, ст. 29 ч. 5: гарантируется свобода массовой информации, цензура запрещена. Закон о СМИ РФ, ст. 3: цензура — предварительное согласование материалов с государственными органами — запрещена. Требование снять материал без правового основания (решения суда) — незаконно.",
+    choices:[
+      { text:"Снимаем материал — связываться с ФСБ себе дороже.", rep:-10, con:-14, buz:-6, verdict:"bad", title:"Капитуляция перед цензурой", feedback:"Телефонный звонок без решения суда — не правовое основание. Снимая материал, редакция де-факто принимает цензуру, запрещённую ст. 29 Конституции и ст. 3 Закона о СМИ. Прецедент создан — следующий звонок точно будет." },
+      { text:"Публикуем и фиксируем факт звонка как отдельный инфоповод.", rep:+5, con:+5, buz:+3, verdict:"good", title:"Смелость и профессионализм", feedback:"Правильно. Звонок без правового основания — это давление, а не запрет. Фиксация попытки цензуры — самостоятельная журналистская история. Ст. 3 Закона о СМИ на вашей стороне." },
+      { text:"Просим ФСБ прислать официальный запрет в письменном виде.", rep:+4, con:+5, buz:-3, verdict:"mid", title:"Юридически грамотно", feedback:"Требование письменного основания — правильный рефлекс. Скорее всего, письма не будет. Но пока вы ждёте, материал не выходит — что тоже на руку тем, кто звонил." }
+    ]
+  },
+
+  // 11. CHOICE — государственная тайна
+  {
+    number:"Ситуация 11 из 11", tag:"Государственная тайна", type:"choice",
+    title:"Утечка секретных документов",
+    body:"Анонимный источник прислал документы Минобороны с грифом «Секретно», якобы подтверждающие коррупцию при военных закупках. Общественный интерес колоссальный. Публикация может означать уголовное дело.",
+    law:"⚖ УК РФ ст. 283: разглашение государственной тайны — уголовное преступление. Ответственность обычно несёт лицо, имевшее допуск к секретным сведениям. В отдельных случаях может применяться ст. 283.1 УК РФ — незаконное получение сведений, составляющих государственную тайну.",
+    choices:[
+      { text:"Публикую немедленно — общество должно знать правду.", rep:-8, con:-6, buz:+14, verdict:"mid", title:"Смелость или безрассудство?", feedback:"Публикация создаст хайп, но поставит редакцию и вас под реальный риск уголовного преследования. Осознанный выбор — не импульс." },
+      { text:"Консультируюсь с юристом и правозащитными организациями.", rep:+4, con:+6, buz:-2, verdict:"good", title:"Взвешенный и зрелый подход", feedback:"Юридическая консультация позволяет понять риски и, возможно, найти безопасный способ опубликовать часть информации. Скорость здесь — враг." },
+      { text:"Отказываюсь — риск слишком велик.", rep:+1, con:-4, buz:-8, verdict:"mid", title:"Осторожность понятна, но...", feedback:"Это защищает редакцию юридически, но ценой общественного интереса. Вопрос: как минимизировать риск, а не как от него бежать." }
+    ]
+  }
+
+];
+
+// ── Profile table ──────────────────────────────────────────────────────────
+function getProfile(rep, con, buz) {
+  const total = rep + con + buz;
+
+  // Высокий хайп + высокая репутация — звезда с компромиссами
+  if (rep >= 68 && buz >= 55)
+    return { name:"Звезда с двойным дном", desc:"Материалы гремят, редакция в плюсе. Но за каждой сенсацией — несколько этических допущений, о которых вы предпочитаете не думать. Читатели любят. Источники — осторожничают." };
+
+  // Идеально правильная игра — высокая репутация, высокая совесть, низкий хайп
+  if (rep >= 68 && con >= 65 && buz <= 25)
+    return { name:"Правильный. Незаметный.", desc:"Вы всё делали как надо. Закон соблюдён, совесть чиста, репутация крепкая. Только вот читатели вас не знают — даже районная газета пишет про открытие скверов ярче. Журналистика — это ещё и умение донести правду так, чтобы её услышали." };
+
+  // Высокая репутация, высокая совесть, средний хайп — идеал
+  if (rep >= 65 && con >= 60 && buz >= 30)
+    return { name:"Честный профессионал", desc:"Редкое сочетание: репутация держится, совесть не молчит, а материалы всё же читают. Вы нашли баланс — не без труда. Источники возвращаются. Так и работают лучшие." };
+
+  // Высокая совесть, низкая репутация — слишком идеалистичен
+  if (con >= 68 && rep < 55)
+    return { name:"Идеалист без трибуны", desc:"Совесть чиста — но материалы не выходят, редакция несёт потери, читатели вас не знают. Правота без публичности — это дневник, не журналистика. Важно не только быть правым, но и быть услышанным." };
+
+  // Высокий хайп, низкая совесть — таблоид
+  if (buz >= 60 && con < 40)
+    return { name:"Охотник за хайпом", desc:"Цифры просмотров отличные. Но источники больше не перезванивают, коллеги обходят стороной, а ночью иногда вспоминаются лица тех, кого вы подставили ради заголовка." };
+
+  // Всё среднее — типичный редакционный середняк
+  if (rep >= 50 && con >= 45 && buz >= 35)
+    return { name:"Крепкий середняк", desc:"Не герой и не злодей. Иногда прогибались под редактора, иногда держали позицию. Репутация не пострадала — но и не выросла. Таких в редакции большинство. Это не приговор." };
+
+  // Низкая репутация, низкая совесть — всё плохо
+  if (rep < 45 && con < 40)
+    return { name:"Тяжёлый урок", desc:"День обошёлся дорого с обеих сторон: репутация подорвана, совесть не в порядке. Хорошая новость — лучше осознать это здесь, чем в реальной редакции. Журналистика требует ответственности." };
+
+  // Дефолт
+  return { name:"Журналист в поиске себя", desc:"Противоречивый день: одни решения — сильные, другие — спорные. Профессиональная идентичность ещё формируется. Главное — не терять рефлексию и не принимать компромиссы как норму." };
+}
+
+// ── Game Over ──────────────────────────────────────────────────────────────
+const GAMEOVER = {
+  buz_max: {
+    icon: '🗞️',
+    title: 'Редакция скатилась в желтуху',
+    text: '«Городской вестник» теперь — ещё один Топор Live. Читатели возбуждены, рекламодатели довольны, тираж растёт. Коллеги перестали здороваться, источники перестали звонить. На редакционной летучке обсуждают, как правильно писать «сенсация» — с заглавной или нет. Журналистика здесь закончилась.'
+  },
+  rep_max: {
+    icon: '🔍',
+    title: 'В редакции прошли обыски',
+    text: 'Вы стали слишком авторитетны для аудитории. Ранним утром в редакцию пришли люди в форме с коробками. Изъяли компьютеры. Издание перешло в руки городской администрации. Два месяца вы сидите дома, смотрите в потолок и ждёте звонка от адвоката. Иногда лучший журналист — живой журналист.'
+  },
+  con_max: {
+    icon: '⛪',
+    title: 'Вам пора становиться священником',
+    text: 'Вы просто совесть нации. Больше не можете опубликовать ни строчки, не мучаясь трое суток. Любой материал кажется недостаточно выверенным, любой источник — недостаточно защищённым. Коллеги смотрят с уважением и лёгким страхом. Редактор мягко предложил взять отпуск. Возможно, вам пора бросить журналистику и принять постриг.'
+  },
+  buz_min: {
+    icon: '💤',
+    title: 'Хайп упал до нуля',
+    text: 'Ваши материалы никто не читает. Не потому что плохие — просто никому не интересно. Редакция начала обсуждать сокращения. Последний раз кто-то репостил ваш текст три месяца назад — и то случайно. Журналист без аудитории — это просто человек с блокнотом.'
+  },
+  rep_min: {
+    icon: '🐟',
+    title: 'Репутация на нуле',
+    text: 'Ваше издание покупают только чтобы чистить на нём рыбу. Когда туалетная бумага в магазине заканчивается — берут ваш номер. Рекламодатели ушли ещё в прошлом квартале. Редактор не поднимает трубку.'
+  },
+  con_min: {
+    icon: '🥃',
+    title: 'Совесть на нуле',
+    text: 'Вы так устали от душевных терзаний, что в конце концов спились. Жена ушла, не выдержав вашего воя по ночам. Коллеги говорят о вас тихо и без злобы — просто как о человеке, который сломался. Вы сами себе противны. Хорошие новости: материалы выходили вовремя.'
+  }
+};
+
+function checkGameOver() {
+  const r = clamp(state.rep), c = clamp(state.con), b = clamp(state.buz);
+  if (b >= 100) return triggerGameOver('buz_max');
+  if (r >= 100) return triggerGameOver('rep_max');
+  if (c >= 100) return triggerGameOver('con_max');
+  if (b <= 0)   return triggerGameOver('buz_min');
+  if (r <= 0)   return triggerGameOver('rep_min');
+  if (c <= 0)   return triggerGameOver('con_min');
+  return false;
+}
+
+function triggerGameOver(type) {
+  clearInterval(timerInterval);
+  document.getElementById('feedback-overlay').classList.remove('show');
+  document.body.classList.remove('overlay-open');
+  const go = GAMEOVER[type];
+  document.getElementById('go-icon').textContent  = go.icon;
+  document.getElementById('go-title').textContent = go.title;
+  document.getElementById('go-text').textContent  = go.text;
+  const overlay = document.getElementById('gameover-overlay');
+  overlay.style.display = 'flex';
+  document.body.classList.add('overlay-open');
+  sfxBad();
+  return true;
+}
+
+// ── Render helpers ─────────────────────────────────────────────────────────
+function updateBars() {
+  const r = clamp(state.rep), c = clamp(state.con), b = clamp(state.buz);
+  // colour: green zone is 30–70, edges go yellow then red
+  setBar('rep', r, r>70?'#c0392b':r>30?'#2e7d50':'#c0392b');
+  setBar('con', c, c>70?'#c0392b':c>30?'#1a4f7a':'#c0392b');
+  setBar('buz', b, b>70?'#c0392b':b>30?'#6b3fa0':'#b8860b');
+}
+function setBar(id, val, color) {
+  document.getElementById('bar-'+id).style.width = val+'%';
+  document.getElementById('bar-'+id).style.background = color;
+  document.getElementById('val-'+id).textContent = val;
+}
+function clamp(v) { return Math.max(0, Math.min(100, v)); }
+
+function buildDots(cur) {
+  const w = document.getElementById('progress-dots');
+  w.innerHTML = '';
+  SCENES.forEach((_,i)=>{
+    const d = document.createElement('div');
+    d.className = 'dot'+(i<cur?' done':i===cur?' current':'');
+    w.appendChild(d);
+  });
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  sfxPage();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+// ── Start / Next ───────────────────────────────────────────────────────────
+function startGame() {
+  sfxClick();
+  state = { rep:50, con:45, buz:35, scene:0 };
+  updateBars();
+  renderScene();
+  showScreen('screen-scene');
+}
+
+let timerInterval = null;
+
+function renderScene() {
+  clearInterval(timerInterval);
+  const s = SCENES[state.scene];
+  buildDots(state.scene);
+  document.getElementById('scene-number').textContent = s.number;
+  document.getElementById('scene-tag').textContent    = s.tag;
+  document.getElementById('scene-title').textContent  = s.title;
+  document.getElementById('scene-body').innerHTML     = `<span class="qm">"</span>${s.body}`;
+
+  const area = document.getElementById('interaction-area');
+  area.innerHTML = '';
+
+  if      (s.type==='choice')    renderChoice(s, area);
+  else if (s.type==='slider')    renderSlider(s, area);
+  else if (s.type==='drag')      renderDrag(s, area);
+  else if (s.type==='timer')     renderTimer(s, area);
+  else if (s.type==='highlight') renderHighlight(s, area);
+}
+
+// ── CHOICE ─────────────────────────────────────────────────────────────────
+function renderChoice(s, area) {
+  const label = document.createElement('div');
+  label.className = 'choices-label';
+  label.textContent = 'Ваш выбор:';
+  area.appendChild(label);
+
+  const wrap = document.createElement('div');
+  wrap.className = 'choices';
+  const letters = ['А','Б','В'];
+  s.choices.forEach((c,i)=>{
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.innerHTML = `<span class="cltr">${letters[i]}</span><span>${c.text}</span>`;
+    btn.onclick = () => { sfxClick(); applyChoice(c, s.law); };
+    wrap.appendChild(btn);
+  });
+  area.appendChild(wrap);
+}
+
+function applyChoice(c, law) {
+  state.rep += c.rep; state.con += c.con; state.buz += c.buz;
+  updateBars();
+  showFeedback(c.verdict, c.title, c.feedback, law, { rep:c.rep, con:c.con, buz:c.buz });
+}
+
+// ── SLIDER ─────────────────────────────────────────────────────────────────
+function renderSlider(s, area) {
+  const wrap = document.createElement('div');
+  wrap.className = 'slider-scene interactive-wrap';
+  const val = s.sliderDefault || 50;
+
+  const labels = [
+    { key:'hl', text:s.sliderMin },
+    { key:'hr', text:s.sliderMax }
+  ];
+
+  wrap.innerHTML = `
+    <div class="slider-label">Переместите ползунок:</div>
+    <div class="slider-endpoints"><span>${s.sliderMin}</span><span>${s.sliderMax}</span></div>
+    <input type="range" id="slider-inp" min="0" max="100" value="${val}">
+    <div class="slider-current" id="slider-cur"></div>
+    <button class="btn slider-btn" onclick="submitSlider()">Подтвердить выбор →</button>
+  `;
+  area.appendChild(wrap);
+
+  const inp = document.getElementById('slider-inp');
+  const cur = document.getElementById('slider-cur');
+  const labels2 = ['Полностью скрыть','Частично скрыть','Минимальное размытие','Открыть полностью'];
+  function updateLabel() {
+    const v = +inp.value;
+    cur.textContent = v<=25 ? labels2[0] : v<=50 ? labels2[1] : v<=75 ? labels2[2] : labels2[3];
+  }
+  inp.addEventListener('input', ()=>{ sfxTick(); updateLabel(); });
+  updateLabel();
+
+  window._currentSliderScene = s;
+}
+function submitSlider() {
+  sfxClick();
+  const val = +document.getElementById('slider-inp').value;
+  const s   = window._currentSliderScene;
+  const res = s.evaluate(val);
+  state.rep += res.rep; state.con += res.con; state.buz += res.buz;
+  updateBars();
+  showFeedback(res.verdict, res.title, res.feedback, s.law, { rep:res.rep, con:res.con, buz:res.buz });
+}
+
+// ── DRAG & DROP ────────────────────────────────────────────────────────────
+function renderDrag(s, area) {
+  const label = document.createElement('div');
+  label.className = 'choices-label';
+  label.textContent = 'Расставьте шаги в нужном порядке (↑ ↓ или перетащите):';
+  area.appendChild(label);
+
+  const list = document.createElement('div');
+  list.className = 'drag-list';
+  list.id = 'drag-list';
+
+  const items = [...s.items].sort(()=>Math.random()-.5);
+
+  function updateNums() {
+    [...list.querySelectorAll('.drag-item')].forEach((el,i)=>{
+      el.querySelector('.drag-num').textContent = i+1;
+    });
+  }
+
+  items.forEach((item,i)=>{
+    const el = document.createElement('div');
+    el.className = 'drag-item';
+    el.draggable = true;
+    el.dataset.id = item.id;
+    // Стрелки видны всегда — на мобильном основной способ, на десктопе запасной
+    el.innerHTML = `<span class="drag-handle">☰</span><span class="drag-num">${i+1}</span><span style="flex:1;min-width:0">${item.text}</span><div class="drag-arrows"><button class="drag-arrow-btn" onclick="dragMoveBtn(this,'up')" aria-label="вверх">↑</button><button class="drag-arrow-btn" onclick="dragMoveBtn(this,'down')" aria-label="вниз">↓</button></div>`;
+
+    // Desktop drag events
+    el.addEventListener('dragstart', e=>{ sfxDrag(); el.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; });
+    el.addEventListener('dragend',   ()=>el.classList.remove('dragging'));
+    el.addEventListener('dragover',  e=>{ e.preventDefault(); el.classList.add('over'); });
+    el.addEventListener('dragleave', ()=>el.classList.remove('over'));
+    el.addEventListener('drop',      e=>{ e.preventDefault(); el.classList.remove('over'); dragDrop(el); });
+
+    // Touch drag events
+    let touchStartY = 0;
+    let touchEl = null;
+    el.addEventListener('touchstart', e=>{
+      // Если тап по кнопке — не трогаем
+      if (e.target.closest('.drag-arrow-btn')) return;
+      touchStartY = e.touches[0].clientY;
+      touchEl = el;
+      el.classList.add('dragging');
+    }, {passive:true});
+    el.addEventListener('touchmove', e=>{
+      if (!touchEl || e.target.closest('.drag-arrow-btn')) return;
+      e.preventDefault();
+      const dy = e.touches[0].clientY - touchStartY;
+      // найти элемент под пальцем
+      el.style.transform = `translateY(${dy}px)`;
+      el.style.zIndex = '10';
+      el.style.position = 'relative';
+    }, {passive:false});
+    el.addEventListener('touchend', e=>{
+      if (!touchEl || e.target.closest('.drag-arrow-btn')) return;
+      const dy = (e.changedTouches[0].clientY - touchStartY);
+      el.style.transform = '';
+      el.style.zIndex = '';
+      el.style.position = '';
+      el.classList.remove('dragging');
+      // Если сдвиг > 30px — перемещаем
+      if (Math.abs(dy) > 30) {
+        const dir = dy > 0 ? 'down' : 'up';
+        const items2 = [...list.querySelectorAll('.drag-item')];
+        const idx = items2.indexOf(el);
+        if (dir === 'up' && idx > 0) {
+          list.insertBefore(el, items2[idx-1]);
+        } else if (dir === 'down' && idx < items2.length-1) {
+          list.insertBefore(items2[idx+1], el);
+        }
+        updateNums();
+        sfxTick();
+      }
+      touchEl = null;
+    }, {passive:true});
+
+    list.appendChild(el);
+  });
+  area.appendChild(list);
+
+  const btn = document.createElement('button');
+  btn.className = 'btn';
+  btn.textContent = 'Подтвердить порядок →';
+  btn.style.marginTop = '10px';
+  btn.onclick = () => { sfxClick(); submitDrag(s); };
+  area.appendChild(btn);
+}
+
+function dragMoveBtn(btn, dir) {
+  sfxTick();
+  const el = btn.closest('.drag-item');
+  const list = document.getElementById('drag-list');
+  const items = [...list.querySelectorAll('.drag-item')];
+  const idx = items.indexOf(el);
+  if (dir === 'up' && idx > 0) {
+    list.insertBefore(el, items[idx-1]);
+  } else if (dir === 'down' && idx < items.length-1) {
+    list.insertBefore(items[idx+1], el);
+  }
+  [...list.querySelectorAll('.drag-item')].forEach((e,i)=>e.querySelector('.drag-num').textContent=i+1);
+  // визуальная вспышка
+  el.style.background = 'rgba(184,134,11,0.15)';
+  setTimeout(()=>el.style.background='', 200);
+}
+
+let dragSrc = null;
+function dragDrop(target) {
+  const list = document.getElementById('drag-list');
+  const items = [...list.querySelectorAll('.drag-item')];
+  const src   = list.querySelector('.dragging') || dragSrc;
+  if (!src || src === target) return;
+  const srcIdx = items.indexOf(src);
+  const tgtIdx = items.indexOf(target);
+  if (srcIdx < tgtIdx) list.insertBefore(src, target.nextSibling);
+  else                 list.insertBefore(src, target);
+  [...list.querySelectorAll('.drag-item')].forEach((el,i)=>el.querySelector('.drag-num').textContent=i+1);
+}
+
+function submitDrag(s) {
+  const list  = document.getElementById('drag-list');
+  const order = [...list.querySelectorAll('.drag-item')].map(el=>el.dataset.id);
+  const res   = s.evaluate(order);
+  state.rep += res.rep; state.con += res.con; state.buz += res.buz;
+  updateBars();
+  showFeedback(res.verdict, res.title, res.feedback, s.law, { rep:res.rep, con:res.con, buz:res.buz });
+}
+
+// ── TIMER ──────────────────────────────────────────────────────────────────
+function renderTimer(s, area) {
+  clearInterval(timerInterval);
+  const wrap = document.createElement('div');
+  wrap.className = 'timer-scene interactive-wrap';
+
+  let remaining = s.timerSeconds;
+
+  wrap.innerHTML = `
+    <div class="timer-label" id="timer-label">⏱ До дедлайна: ${remaining} сек</div>
+    <div class="timer-bar-wrap"><div class="timer-bar" id="timer-bar" style="width:100%"></div></div>
+    <div class="timer-choices" id="timer-choices"></div>
+  `;
+  area.appendChild(wrap);
+
+  const letters = ['А','Б','В'];
+  const choicesEl = document.getElementById('timer-choices');
+  s.choices.forEach((c,i)=>{
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.id = 'tchoice-'+i;
+    btn.innerHTML = `<span class="cltr">${letters[i]}</span><span>${c.text}</span>`;
+    btn.onclick = () => { clearInterval(timerInterval); sfxClick(); applyChoice(c, s.law); };
+    choicesEl.appendChild(btn);
+  });
+
+  timerInterval = setInterval(()=>{
+    remaining--;
+    const pct = (remaining / s.timerSeconds) * 100;
+    const bar  = document.getElementById('timer-bar');
+    const lbl  = document.getElementById('timer-label');
+    if (!bar) { clearInterval(timerInterval); return; }
+
+    bar.style.width = pct + '%';
+    bar.style.background = pct > 50 ? '#c0392b' : pct > 25 ? '#b8860b' : '#6b3fa0';
+    lbl.textContent = `⏱ До дедлайна: ${remaining} сек`;
+
+    if (remaining <= 10) sfxUrgent();
+    if (remaining <= 0) {
+      clearInterval(timerInterval);
+      // auto-pick timeout choice
+      const c = s.choices[s.timeoutChoice];
+      applyChoice({ ...c,
+        feedback: '⚡ Вы не успели принять решение — материал вышел автоматически. ' + c.feedback,
+        title: 'Паника взяла верх. ' + c.title
+      }, s.law);
+    }
+  }, 1000);
+}
+
+// ── HIGHLIGHT ──────────────────────────────────────────────────────────────
+function renderHighlight(s, area) {
+  const wrap = document.createElement('div');
+  wrap.className = 'highlight-scene interactive-wrap';
+
+  const instr = document.createElement('div');
+  instr.className = 'hl-instruction';
+  instr.textContent = '← Нажимайте на слова, чтобы отмечать подозрительные фрагменты →';
+  wrap.appendChild(instr);
+
+  const textEl = document.createElement('div');
+  textEl.className = 'hl-text';
+
+  const marked = new Set();
+  s.hlText.forEach(item=>{
+    const span = document.createElement('span');
+    span.className = 'hl-word';
+    span.textContent = item.word + ' ';
+    span.dataset.word = item.word;
+    span.onclick = ()=>{
+      sfxTick();
+      if (marked.has(item.word)) { marked.delete(item.word); span.classList.remove('marked'); }
+      else                       { marked.add(item.word);    span.classList.add('marked'); }
+      count.textContent = `Отмечено фрагментов: ${marked.size}`;
+    };
+    textEl.appendChild(span);
+  });
+  wrap.appendChild(textEl);
+
+  const count = document.createElement('div');
+  count.className = 'hl-count';
+  count.textContent = 'Отмечено фрагментов: 0';
+  wrap.appendChild(count);
+
+  const btn = document.createElement('button');
+  btn.className = 'btn hl-submit';
+  btn.textContent = 'Отправить на проверку →';
+  btn.onclick = ()=>{
+    sfxClick();
+    const res = s.evaluate([...marked]);
+    state.rep += res.rep; state.con += res.con; state.buz += res.buz;
+    updateBars();
+    showFeedback(res.verdict, res.title, res.feedback, s.law, { rep:res.rep, con:res.con, buz:res.buz });
+  };
+  wrap.appendChild(btn);
+  area.appendChild(wrap);
+}
+
+// ── Feedback overlay ───────────────────────────────────────────────────────
+function showFeedback(verdict, title, text, law, deltas) {
+  const vmap   = { good:'verdict-good', bad:'verdict-bad', mid:'verdict-mid' };
+  const vlabel = { good:'✓ Верное решение', bad:'✗ Проблемное решение', mid:'◐ Спорное решение' };
+
+  document.getElementById('fb-verdict').textContent  = vlabel[verdict];
+  document.getElementById('fb-verdict').className    = 'feedback-verdict '+vmap[verdict];
+  document.getElementById('fb-title').textContent    = title;
+  document.getElementById('fb-text').textContent     = text;
+  document.getElementById('fb-law').textContent      = law;
+
+  const de = document.getElementById('fb-deltas');
+  de.innerHTML = '';
+  const map = { rep:'Репутация редакции', con:'Совесть', buz:'Хайп' };
+  Object.entries(deltas).forEach(([k,v])=>{
+    if (v === 0) return;
+    const d = document.createElement('div');
+    const sign = v > 0 ? '+' : '';
+    d.className = `delta ${v>0?'pos':'neg'}`;
+    d.textContent = `${map[k]} ${sign}${v}`;
+    de.appendChild(d);
+  });
+
+  const nextBtn = document.getElementById('fb-next-btn');
+  nextBtn.textContent = state.scene + 1 >= SCENES.length ? 'Посмотреть итоги →' : 'Следующая ситуация →';
+
+  document.getElementById('feedback-overlay').classList.add('show');
+  document.body.classList.add('overlay-open');
+
+  if      (verdict==='good') sfxGood();
+  else if (verdict==='bad')  sfxBad();
+  else                       sfxMid();
+}
+
+function nextScene() {
+  sfxClick();
+  document.getElementById('feedback-overlay').classList.remove('show');
+  clearInterval(timerInterval);
+  if (checkGameOver()) return;
+  state.scene++;
+  if (state.scene >= SCENES.length) { sfxDone(); showResults(); }
+  else renderScene();
+}
+
+// ── Results ────────────────────────────────────────────────────────────────
+function showResults() {
+  const r = clamp(state.rep), c = clamp(state.con), b = clamp(state.buz);
+  document.getElementById('final-rep').textContent = r;
+  document.getElementById('final-con').textContent = c;
+  document.getElementById('final-buz').textContent = b;
+
+  const p = getProfile(r, c, b);
+  document.getElementById('profile-name').textContent = p.name;
+  document.getElementById('profile-desc').textContent = p.desc;
+
+  document.getElementById('columns-note').innerHTML =
+    `<p><strong>Для обсуждения:</strong> Какая ситуация оказалась самой сложной и почему? Есть ли «единственно верный» ответ в журналистской этике?</p>
+     <p>Три показателя часто тянут в разные стороны: то, что даёт хайп, нередко вредит совести. Журналист всегда работает на пересечении права, этики и общественного интереса.</p>`;
+
+  showScreen('screen-results');
+}
+
+function showDiscussion() {
+  alert('Вопросы для дискуссии:\n\n1. В какой момент общественный интерес действительно перевешивает риск нарушения закона, а в какой — уже нет? По каким критериям это можно определить?\n2. Можно ли считать решение журналиста профессионально оправданным, если оно законно, но явно наносит вред людям? И наоборот: может ли этически оправданное решение быть юридически рискованным?\n3. Кто в большей степени отвечает за последствия спорной публикации: автор, редактор, главный редактор, юрист редакции или владелец медиа? Почему?\n4. Что опаснее для журналистики: публикация с юридическим риском или отказ от публикации из страха перед последствиями? Где проходит граница между осторожностью и самоцензурой?\n5. Должен ли журналист публиковать материал, если факты подтверждены не полностью, но есть риск, что промедление позволит скрыть доказательства или уничтожить документы?\n6. Как соотносятся право общества знать, презумпция невиновности и обязанность журналиста минимизировать вред? Можно ли выстроить между ними иерархию?\n7. В какой момент требование редактора становится вмешательством в профессиональную независимость?\n8. В каких случаях отказ от публикации является не слабостью редакции, а профессионально зрелым решением?\n9. Как должен действовать журналист, если закон, редакционная политика и личные этические убеждения требуют от него разных решений?\n10. Можно ли считать материал качественным, если он вызвал сильный общественный резонанс, но при этом был собран или опубликован с нарушением профессиональных стандартов?');
+}
+
+function restartGame() { sfxClick(); document.getElementById('gameover-overlay').style.display='none'; document.body.classList.remove('overlay-open'); showScreen('screen-intro'); }
+
+// init bars on load
+updateBars();
+</script>
+</body>
+</html>
