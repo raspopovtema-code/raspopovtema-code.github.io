@@ -180,7 +180,7 @@ const FALLBACK_POINTS = [{"id": 1, "place": "Пятницкая улица", "qu
     dirty = !!remote && JSON.stringify(editable(points)) !== JSON.stringify(editable(remote.items));
     stash(); setControls(); stats();
     message(dirty ? 'Изменения пока не опубликованы.' : '');
-    if (active !== null) renderPopup();
+    if (active !== null) { renderPopup(); positionPopup(); }
   }
   function apply(data) {
     validate(data);
@@ -188,7 +188,7 @@ const FALLBACK_POINTS = [{"id": 1, "place": "Пятницкая улица", "qu
     remote = {revision:data.revision,items:copy(points)};
     loaded = true; dirty = false;
     stats(); setControls();
-    if (active !== null) renderPopup();
+    if (active !== null) { renderPopup(); positionPopup(); }
     if (editor.open) renderEditor();
   }
 
