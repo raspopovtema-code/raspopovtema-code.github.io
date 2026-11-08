@@ -32,9 +32,7 @@ h1 span{color:var(--hot)}
 .n{grid-row:1/span 3;width:30px;height:30px;border-radius:50%;background:var(--hot);color:#fff;font:700 15px/30px var(--ui);text-align:center}
 .place{font-weight:700;font-size:16px;line-height:1.25}
 .quote{margin:4px 0 2px;font-size:17px;line-height:1.4;font-style:italic;white-space:pre-line;border-left:3px solid var(--hot);padding:2px 0 2px 12px;min-height:1.5em;outline:none;border-radius:2px}
-.quote:empty::before{content:"Нажмите и вставьте строчку из трека";color:#A0A7B2;font-style:normal;font-size:14px}
 .quote:empty{border-left-style:dashed;border-left-color:#C6CDD6}
-.quote:focus{background:#FFF6F6}
 .tracks{font-size:13.5px;color:var(--muted)}
 .tracks b{color:var(--ink);font-weight:600}
 .extra{grid-column:2;font-size:12.5px;color:var(--muted);margin-top:4px}
@@ -55,6 +53,24 @@ svg .zm{font-family:var(--display);font-size:30px;fill:var(--hot);opacity:.85}
 svg .metro circle{fill:#fff;stroke:#17191E;stroke-width:2}
 svg .metro text{font-weight:700;font-size:11px;text-anchor:middle}
 svg .mn{font-size:11px;fill:var(--muted)}
+
+[hidden]{display:none!important}
+.map-tools{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;margin:0 0 18px}
+.map-button{font:600 14px/1.3 var(--ui);padding:10px 14px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);text-decoration:none;cursor:pointer}
+.map-button.primary{background:var(--hot);color:#fff;border-color:var(--hot)}
+.map-button:disabled{opacity:.5;cursor:default}
+.map-button:focus-visible{outline:3px solid #17191e;outline-offset:3px}
+.map-status{flex-basis:100%;font-size:13px;color:var(--muted);min-height:1.4em}
+.map-status:empty{display:none}
+.map-status.error{color:#a6161c}
+.quote,.tracks{grid-column:2;min-width:0;overflow-wrap:anywhere}
+.quote:empty::before{content:'Цитата появится здесь';font-size:14px;color:#a0a7b2;font-style:normal}
+.owner-editor .quote:empty::before{content:'Вставь цитату'}
+.owner-editor [contenteditable="plaintext-only"]{outline:1px dashed #c6cdd6;outline-offset:4px}
+.owner-editor [contenteditable="plaintext-only"]:focus{outline:2px solid var(--hot);background:#fff6f6}
+.owner-editor .tracks{padding:4px 0;min-height:1.5em}
+.owner-editor .tracks:empty::before{content:'Название трека';color:#a0a7b2}
+
 </style>
 </head>
 <body>
@@ -63,6 +79,15 @@ svg .mn{font-size:11px;fill:var(--muted)}
     <h1>Москва <span>Гуфа</span></h1>
     <div class="sub">Места из треков: Замоскворечье, Пятницкая и трамвай от Чистых прудов</div>
   </header>
+
+  <div class="map-tools" aria-label="Управление картой">
+    <a id="map-edit" class="map-button" target="_top" hidden>Редактировать</a>
+    <button id="map-save" class="map-button primary" type="button" hidden disabled>Сохранить</button>
+    <button id="map-cancel" class="map-button" type="button" hidden disabled>Отменить</button>
+    <button id="map-refresh" class="map-button" type="button" hidden>Обновить данные</button>
+    <button id="map-restore" class="map-button" type="button" hidden>Вернуть черновик</button>
+    <span id="map-status" class="map-status" role="status" aria-live="polite"></span>
+  </div>
   <div class="grid">
     <div class="col">
       <article class="q"><span class="n">1</span><div class="place">Пятницкая улица</div><div class="quote" data-q="1"></div><div class="tracks"><b>«На балкон»</b>, «Ямакаси», «Непогода» (Guf и Murovei), Centr — «Не на экспорт»</div><div class="extra">Там же «Луизиана» из «Непогоды» и дом 18 из трека. Закрылись «Дядя Ваня» (дом 20), «Рок-Вегас», «Апшу», «Приват».</div></article>
@@ -123,43 +148,195 @@ svg .mn{font-size:11px;fill:var(--muted)}
       <article class="q"><span class="n">7</span><div class="place">Ленинский проспект</div><div class="quote" data-q="7"></div><div class="tracks"><b>«Для неё»</b></div></article>
     </div>
   </div>
-  <div class="foot"><span>Схема по материалам: тексты и аннотации Genius, интервью Rap.ru, статья «Переезды и личное» на Дзене.</span><span id="savehint">Цитаты можно вставить прямо здесь: нажмите на пустую рамку. Они сохранятся в этом браузере.</span></div>
+  <div class="foot"><span>Схема по материалам: тексты и аннотации Genius, интервью Rap.ru, статья «Переезды и личное» на Дзене.</span></div>
 </div>
 <script>
-/* ===== ЦИТАТЫ =====
-   Чтобы цитаты были в файле на любом компьютере, вставьте строчки между обратными кавычками.
-   Несколько строк можно вставлять как есть, с переносами. */
-const QUOTES = {
-  1: ``, // Пятницкая: «На балкон», «Ямакаси», «Непогода» или Centr — «Не на экспорт»
-  2: ``, // граффити на Новокузнецкой: «Дома»
-  3: ``, // дом бабушки и крыша: «Дома», «Новости», «Заходит Луна», «Больше стаффа»
-  4: ``, // «Макдональдс»: «Хлоп-хлоп»
-  5: ``, // трамвай: «Провода», «Было давно», «Дома»…
-  6: ``, // Чистопрудный → Южное Бутово: «Сверху видно всё»
-  7: ``, // Ленинский проспект: «Для неё»
-};
-/* ================== */
-const KEY = 'moskva-gufa-quotes';
-let saved = {};
-try { saved = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { saved = {}; }
-document.querySelectorAll('.quote').forEach((el) => {
-  const k = el.dataset.q;
-  const text = (saved[k] != null && saved[k] !== '') ? saved[k] : (QUOTES[k] || '');
-  el.textContent = text.trim();
-  try { el.contentEditable = 'plaintext-only'; } catch (e) {}
-  if (el.contentEditable !== 'plaintext-only') el.contentEditable = 'true';
-  el.addEventListener('input', () => {
-    saved[k] = el.innerText.replace(/\n{3,}/g, '\n\n').trim();
-    try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
+window.GUF_MAP_CONFIG = {"bridge": false, "editor": false, "owner": false, "endpoint": "https://script.google.com/macros/s/AKfycbyKciwR-N7FI2R3XCLjaGuiNmvQYt5HYemu0o4O44zRq8L16oY_rlcQR0KPKBuxV-4/exec"};
+(function () {
+  'use strict';
+  const config = window.GUF_MAP_CONFIG || {};
+  const cards = Array.from(document.querySelectorAll('.q'));
+  const status = document.getElementById('map-status');
+  const edit = document.getElementById('map-edit');
+  const save = document.getElementById('map-save');
+  const refresh = document.getElementById('map-refresh');
+  const restore = document.getElementById('map-restore');
+  const cancel = document.getElementById('map-cancel');
+  const draftKey = 'moskva-gufa-owner-draft-v2';
+  const cacheKey = 'moskva-gufa-public-cache-v2:' + (config.endpoint || '');
+  let remote = null;
+  let busy = false;
+  let dirty = false;
+  let loaded = false;
+  let serial = 0;
+  const canEdit = !!(config.bridge && config.editor && config.owner);
+
+  function message(text, error) {
+    status.textContent = text;
+    status.classList.toggle('error', !!error);
+  }
+  function setControls() {
+    save.disabled = busy || !dirty || !loaded;
+    refresh.disabled = busy;
+    cancel.disabled = busy || !dirty;
+    restore.disabled = busy || !loaded;
+    cards.forEach(function (card) {
+      [card.querySelector('.quote'), card.querySelector('.tracks')].forEach(function (el) {
+        el.contentEditable = canEdit && loaded && !busy ? 'plaintext-only' : 'false';
+        el.setAttribute('aria-readonly', String(!(canEdit && loaded && !busy)));
+      });
+    });
+  }
+  function items() {
+    return cards.map(function (card) {
+      return {
+        id: Number(card.querySelector('.quote').dataset.q),
+        quote: card.querySelector('.quote').innerText.replace(/\r\n?/g, '\n').trim(),
+        tracks: card.querySelector('.tracks').innerText.trim()
+      };
+    });
+  }
+  function validate(data) {
+    if (!data || typeof data.revision !== 'string' || !Array.isArray(data.items) || data.items.length !== 7) throw new Error('Получен неполный ответ от хранилища.');
+    const ids = new Set();
+    data.items.forEach(function (item) {
+      if (!item || !Number.isInteger(item.id) || item.id < 1 || item.id > 7 || ids.has(item.id) || typeof item.quote !== 'string' || typeof item.tracks !== 'string') throw new Error('Не удалось прочитать карточки из таблицы.');
+      ids.add(item.id);
+    });
+    return data;
+  }
+  function apply(data) {
+    validate(data);
+    data.items.forEach(function (item) {
+      const card = cards.find(function (node) { return Number(node.querySelector('.quote').dataset.q) === item.id; });
+      card.querySelector('.quote').textContent = item.quote;
+      card.querySelector('.tracks').textContent = item.tracks;
+    });
+    remote = data;
+    loaded = true;
+    dirty = false;
+    setControls();
+  }
+  function draft() {
+    try { return JSON.parse(localStorage.getItem(draftKey) || 'null'); } catch (_) { return null; }
+  }
+  function stash() {
+    try { localStorage.setItem(draftKey, JSON.stringify({ revision: remote && remote.revision, items: items(), savedAt: new Date().toISOString() })); } catch (_) {}
+  }
+  function checkDraft() {
+    const saved = draft();
+    restore.hidden = !(canEdit && saved && Array.isArray(saved.items) && saved.items.length === 7);
+  }
+  function rpc(method, args) {
+    return new Promise(function (resolve, reject) {
+      const runner = google.script.run.withSuccessHandler(resolve).withFailureHandler(function (error) { reject(new Error(error && error.message || 'Google не подтвердил операцию.')); });
+      if (method === 'saveMap') runner.saveMap(args);
+      else if (method === 'getEditorData') runner.getEditorData();
+      else runner.getMapData();
+    });
+  }
+  function publicData() {
+    return new Promise(function (resolve, reject) {
+      if (!config.endpoint || !/^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(config.endpoint)) {
+        reject(new Error('Подключение к таблице ещё не настроено.'));
+        return;
+      }
+      const name = 'gufMapCallback_' + Date.now() + '_' + (++serial);
+      const script = document.createElement('script');
+      const timer = setTimeout(function () { cleanup(); reject(new Error('Таблица не ответила. Попробуйте обновить данные.')); }, 18000);
+      function cleanup() { clearTimeout(timer); script.remove(); delete window[name]; }
+      window[name] = function (data) { cleanup(); if (data && data.error) reject(new Error(data.error)); else resolve(data); };
+      script.onerror = function () { cleanup(); reject(new Error('Не удалось связаться с таблицей.')); };
+      script.src = config.endpoint + '?action=data&callback=' + name;
+      document.body.appendChild(script);
+    });
+  }
+  async function load() {
+    if (busy) return;
+    busy = true;
+    setControls();
+    message('Загружаем карточки…');
+    try {
+      const data = validate(await (config.bridge ? rpc(canEdit ? 'getEditorData' : 'getMapData') : publicData()));
+      apply(data);
+      if (!canEdit) try { localStorage.setItem(cacheKey, JSON.stringify(data)); } catch (_) {}
+      message(canEdit ? 'Редактируй цитаты и подписи треков, затем нажми «Сохранить».' : config.editor ? 'Редактирование доступно владельцу карты. Открой редактор в его Google-аккаунте.' : '');
+      checkDraft();
+    } catch (error) {
+      message(error.message + (!canEdit && loaded ? ' Показана сохранённая версия.' : ''), true);
+    } finally { busy = false; setControls(); }
+  }
+
+  document.body.classList.toggle('owner-editor', canEdit);
+  edit.hidden = !!config.editor;
+  if (config.endpoint) edit.href = config.endpoint + '?page=edit';
+  else { edit.removeAttribute('href'); edit.hidden = true; }
+  save.hidden = cancel.hidden = !canEdit;
+  refresh.hidden = false;
+  cards.forEach(function (card) {
+    const place = card.querySelector('.place').textContent;
+    const quote = card.querySelector('.quote');
+    const tracks = card.querySelector('.tracks');
+    quote.setAttribute('role', 'textbox');
+    quote.setAttribute('aria-label', 'Цитата: ' + place);
+    quote.setAttribute('aria-multiline', 'true');
+    tracks.setAttribute('role', 'textbox');
+    tracks.setAttribute('aria-label', 'Треки: ' + place);
+    [quote, tracks].forEach(function (el) {
+      el.addEventListener('input', function () {
+        if (!canEdit || busy || !loaded) return;
+        dirty = JSON.stringify(items()) !== JSON.stringify(remote.items.map(function (item) { return { id: item.id, quote: item.quote, tracks: item.tracks }; }));
+        stash(); checkDraft(); setControls();
+        message(dirty ? 'Изменения пока не опубликованы.' : '');
+      });
+      el.addEventListener('blur', function () { if (!el.innerText.trim()) el.textContent = ''; });
+    });
   });
-  el.addEventListener('blur', () => { if (!el.innerText.trim()) el.textContent = ''; });
-  el.addEventListener('paste', (e) => {
-    if (el.contentEditable === 'plaintext-only') return;
-    e.preventDefault();
-    const t = (e.clipboardData || window.clipboardData).getData('text');
-    document.execCommand('insertText', false, t);
+  save.addEventListener('click', async function () {
+    if (!canEdit || busy || !dirty || !remote) return;
+    stash();
+    busy = true; setControls(); message('Сохраняем в таблицу…');
+    try {
+      const result = await rpc('saveMap', { revision: remote.revision, items: items() });
+      if (!result || !result.ok) throw new Error(result && result.message || 'Сохранение не подтверждено. Черновик остался в этом браузере.');
+      apply(result.data);
+      try { localStorage.removeItem(draftKey); } catch (_) {}
+      checkDraft(); message('Сохранено. Изменения опубликованы на карте.');
+    } catch (error) { message(error.message, true); }
+    finally { busy = false; setControls(); }
   });
-});
+  refresh.addEventListener('click', function () {
+    if (dirty) { stash(); if (!window.confirm('Обновить данные из таблицы? Текущие изменения останутся в черновике этого браузера.')) return; }
+    load();
+  });
+  cancel.addEventListener('click', function () {
+    if (busy || !remote || !window.confirm('Отменить неопубликованные изменения?')) return;
+    apply(remote);
+    try { localStorage.removeItem(draftKey); } catch (_) {}
+    checkDraft(); message('Изменения отменены.');
+  });
+  restore.addEventListener('click', function () {
+    const saved = draft();
+    if (!canEdit || busy || !saved || !Array.isArray(saved.items) || !window.confirm('Вернуть черновик в карточки? Он будет опубликован только после нажатия «Сохранить».')) return;
+    try {
+      validate({ items: saved.items, revision: String(saved.revision || '') });
+      saved.items.forEach(function (item) {
+        const card = cards.find(function (node) { return Number(node.querySelector('.quote').dataset.q) === item.id; });
+        card.querySelector('.quote').textContent = item.quote;
+        card.querySelector('.tracks').textContent = item.tracks;
+      });
+      dirty = true; setControls(); message('Черновик восстановлен. Проверь текст перед сохранением.');
+    } catch (_) { message('Не удалось прочитать черновик.', true); }
+  });
+  window.addEventListener('beforeunload', function (event) { if (canEdit && dirty) { event.preventDefault(); event.returnValue = ''; } });
+  if (!canEdit) {
+    try { const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null'); if (cached) apply(cached); } catch (_) {}
+  }
+  setControls();
+  load();
+})();
+
 </script>
+<noscript>Для загрузки цитат из таблицы включите JavaScript.</noscript>
 </body>
 </html>
